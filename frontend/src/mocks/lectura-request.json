@@ -1,0 +1,8 @@
+{
+  "dispositivoId": "maceta-01",
+  "medidaEn": "2026-10-16T16:20:05Z",
+  "mediciones": [
+    { "tipo": "HUMEDAD_SUELO", "valor": 31.4 },
+    { "tipo": "TEMPERATURA", "valor": 24.5 }
+  ]
+}

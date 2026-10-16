@@ -1,0 +1,6 @@
+{
+  "lecturaId": 1533,
+  "aceptadas": ["TEMPERATURA"],
+  "descartadas": [{ "tipo": "HUMEDAD_SUELO", "valor": 150, "motivo": "FUERA_DE_RANGO" }],
+  "comando": null
+}

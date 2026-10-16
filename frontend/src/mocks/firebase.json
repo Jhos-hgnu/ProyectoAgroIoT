@@ -1,0 +1,30 @@
+{
+  "dispositivos": {
+    "maceta-01": {
+      "nombre": "Maceta 01",
+      "tieneBomba": true,
+      "riegoAutomatico": true,
+      "umbralRiego": 35,
+      "ultimaConexion": 1792167605000,
+      "riego": {
+        "estado": "ENVIADO",
+        "comandoId": 88,
+        "origen": "MANUAL",
+        "actualizadoEn": 1792167605000
+      },
+      "sensores": {
+        "HUMEDAD_SUELO": { "valor": 38.2, "unidad": "%", "actualizadoEn": 1792167605000 },
+        "TEMPERATURA": { "valor": 24.5, "unidad": "°C", "actualizadoEn": 1792167605000 }
+      },
+      "alertasActivas": {
+        "17": {
+          "tipoSensor": "TEMPERATURA",
+          "severidad": "ADVERTENCIA",
+          "mensaje": "Temperatura alta",
+          "valor": 33.1,
+          "creadaEn": 1792167605000
+        }
+      }
+    }
+  }
+}

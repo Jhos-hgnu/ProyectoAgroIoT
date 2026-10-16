@@ -1,0 +1,6 @@
+{
+  "lecturaId": 1532,
+  "aceptadas": ["HUMEDAD_SUELO", "TEMPERATURA"],
+  "descartadas": [],
+  "comando": { "id": 88, "accion": "REGAR", "duracionSeg": 5 }
+}

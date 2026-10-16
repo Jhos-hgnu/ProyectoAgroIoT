@@ -1,0 +1,10 @@
+{
+  "id": 5,
+  "desde": "2026-10-15T16:20:00Z",
+  "hasta": "2026-10-16T16:20:00Z",
+  "sensores": ["HUMEDAD_SUELO", "TEMPERATURA"],
+  "sensoresSinDatos": ["HUMEDAD_AIRE", "LUZ"],
+  "contenido": "## Hallazgos\n- La humedad del suelo bajó de 44 % a 30 %...",
+  "modelo": "gemini-2.5-flash",
+  "creadoEn": "2026-10-16T16:20:09Z"
+}

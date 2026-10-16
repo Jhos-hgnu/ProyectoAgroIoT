@@ -1,0 +1,17 @@
+{
+  "id": "maceta-01",
+  "nombre": "Maceta 01",
+  "ubicacion": "Laboratorio",
+  "tieneBomba": true,
+  "riegoAutomatico": true,
+  "riegoAutomaticoDisponible": true,
+  "umbralRiego": 35,
+  "duracionRiegoSeg": 5,
+  "esperaRiegoMin": 10,
+  "ultimaConexion": "2026-10-16T16:20:05Z",
+  "conectado": true,
+  "sensores": [
+    { "tipo": "HUMEDAD_SUELO", "nombre": "Humedad del suelo", "unidad": "%", "ultimoValor": 31.4, "ultimaLectura": "2026-10-16T16:20:05Z", "estado": "ACTIVO" },
+    { "tipo": "TEMPERATURA", "nombre": "Temperatura del aire", "unidad": "°C", "ultimoValor": 24.5, "ultimaLectura": "2026-10-16T15:41:10Z", "estado": "SIN_DATOS" }
+  ]
+}

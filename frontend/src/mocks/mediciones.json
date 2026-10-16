@@ -1,0 +1,16 @@
+{
+  "dispositivoId": "maceta-01",
+  "desde": "2026-10-15T16:20:00Z",
+  "hasta": "2026-10-16T16:20:00Z",
+  "agrupacion": "HORA",
+  "series": [
+    {
+      "tipo": "HUMEDAD_SUELO",
+      "unidad": "%",
+      "puntos": [
+        { "t": "2026-10-16T15:00:00Z", "valor": 41.3, "min": 38.0, "max": 44.9 },
+        { "t": "2026-10-16T16:00:00Z", "valor": 33.0, "min": 30.2, "max": 36.1 }
+      ]
+    }
+  ]
+}
