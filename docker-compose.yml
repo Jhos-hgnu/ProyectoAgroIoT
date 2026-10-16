@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: agroiot-postgres
+    environment:
+      POSTGRES_DB: agroiot
+      POSTGRES_USER: agroiot
+      POSTGRES_PASSWORD: agroiot
+    ports:
+      # Cambia DB_PORT si ya tienes otro PostgreSQL en el 5432 (por ejemplo DB_PORT=5433).
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Solo se ejecuta la primera vez (volumen vacío). Para recargarlo: docker compose down -v
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - agroiot-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agroiot -d agroiot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  agroiot-pgdata:
