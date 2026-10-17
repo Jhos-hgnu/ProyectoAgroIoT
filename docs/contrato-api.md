@@ -275,6 +275,12 @@ Solo los campos a cambiar: `riegoAutomatico`, `umbralRiego` (0–100), `duracion
 
 Parámetros opcionales: `desde` y `hasta` (por defecto, últimas 24 h), `tipos` separados por coma (por defecto, todos), `agrupacion` = `NINGUNA` (por defecto) o `HORA`. Solo vienen las series con datos. Con `HORA`, `valor` es el promedio y se agregan `min` y `max`.
 
+Límites (400 `VALIDACION` si no se cumplen):
+
+- `desde` anterior a `hasta`.
+- Rango máximo de **24 h con `NINGUNA`** (un punto cada 10 s son ~8 600 por sensor) y de **31 días con `HORA`**. Para más de un día, usar `HORA`.
+- Cada tipo de `tipos` debe existir en el catálogo (`HUMEDAD_SUELO`, `TEMPERATURA`, `HUMEDAD_AIRE`, `LUZ`); se aceptan minúsculas. El frontend debe armar `tipos` a partir de la lista `sensores` de `GET /dispositivos/{id}`.
+
 ```json
 {
   "dispositivoId": "maceta-01",

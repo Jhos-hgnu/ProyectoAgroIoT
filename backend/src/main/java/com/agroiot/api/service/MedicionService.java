@@ -32,8 +32,10 @@ public class MedicionService {
 
 	/** Ventana por defecto cuando no llegan desde/hasta. */
 	private static final Duration VENTANA_POR_DEFECTO = Duration.ofHours(24);
-	/** Tope para no devolver respuestas enormes (sin agrupar son ~8 600 puntos por sensor y día). */
-	private static final Duration VENTANA_MAXIMA = Duration.ofDays(31);
+	/** Sin agrupar llega un punto cada 10 s: 24 h son ~8 600 puntos por sensor (~1,3 MB con 4 sensores). */
+	private static final Duration MAXIMO_SIN_AGRUPAR = Duration.ofHours(24);
+	/** Por hora, 31 días son 744 puntos por sensor. */
+	private static final Duration MAXIMO_POR_HORA = Duration.ofDays(31);
 
 	private final DispositivoRepository dispositivos;
 	private final TipoSensorRepository tiposSensor;
@@ -59,8 +61,13 @@ public class MedicionService {
 		if (!inicio.isBefore(fin)) {
 			throw ApiException.validacion("desde debe ser anterior a hasta");
 		}
-		if (Duration.between(inicio, fin).compareTo(VENTANA_MAXIMA) > 0) {
-			throw ApiException.validacion("El rango no puede ser mayor a " + VENTANA_MAXIMA.toDays() + " días");
+		Duration rango = Duration.between(inicio, fin);
+		if (agrupacion == Agrupacion.NINGUNA && rango.compareTo(MAXIMO_SIN_AGRUPAR) > 0) {
+			throw ApiException.validacion("Sin agrupar el rango máximo es de " + MAXIMO_SIN_AGRUPAR.toHours()
+					+ " h; usa agrupacion=HORA para rangos mayores");
+		}
+		if (agrupacion == Agrupacion.HORA && rango.compareTo(MAXIMO_POR_HORA) > 0) {
+			throw ApiException.validacion("Por hora el rango máximo es de " + MAXIMO_POR_HORA.toDays() + " días");
 		}
 
 		Map<String, TipoSensor> catalogo = tiposSensor.findAll().stream()

@@ -1,5 +1,6 @@
 package com.agroiot.api.controller;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -107,13 +108,29 @@ class DispositivoControllerTest {
 				.andExpect(jsonPath("$.codigo").value("VALIDACION"));
 		mvc.perform(get(URL + "/mediciones?desde=2020-01-02T00:00:00Z&hasta=2020-01-01T00:00:00Z"))
 				.andExpect(status().isBadRequest());
-		mvc.perform(get(URL + "/mediciones?desde=2020-01-01T00:00:00Z&hasta=2020-03-01T00:00:00Z"))
-				.andExpect(status().isBadRequest());
 		mvc.perform(get(URL + "/mediciones?agrupacion=DIA"))
 				.andExpect(status().isBadRequest());
 		mvc.perform(get("/api/dispositivos/maceta-99/mediciones"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.codigo").value("DISPOSITIVO_NO_ENCONTRADO"));
+	}
+
+	@Test
+	void sinAgrupar_permiteHasta24Horas() throws Exception {
+		mvc.perform(get(URL + "/mediciones?desde=2020-01-01T00:00:00Z&hasta=2020-01-02T00:00:00Z"))
+				.andExpect(status().isOk());
+		mvc.perform(get(URL + "/mediciones?desde=2020-01-01T00:00:00Z&hasta=2020-01-02T00:00:01Z"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.mensaje").value(containsString("agrupacion=HORA")));
+	}
+
+	@Test
+	void porHora_permiteHasta31Dias() throws Exception {
+		mvc.perform(get(URL + "/mediciones?agrupacion=HORA&desde=2020-01-01T00:00:00Z&hasta=2020-02-01T00:00:00Z"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.series[0].puntos.length()").value(2));
+		mvc.perform(get(URL + "/mediciones?agrupacion=HORA&desde=2020-01-01T00:00:00Z&hasta=2020-02-01T00:00:01Z"))
+				.andExpect(status().isBadRequest());
 	}
 
 	// --- PATCH ---------------------------------------------------------------

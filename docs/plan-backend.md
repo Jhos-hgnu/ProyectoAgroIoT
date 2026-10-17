@@ -52,14 +52,14 @@ Corresponde al orden 2 y 5 del contrato.
   - Sin agrupar usa la consulta 4 de `db/consultas.sql`; por hora usa la consulta 1, que da promedio, `min` y `max`.
   - Si faltan `desde` o `hasta`, toma las últimas 24 h. También acepta el filtro `tipos`.
   - Devuelve solo las series que tienen datos.
-  - Decisiones que el contrato no fijaba:
+  - Límites, agregados también al contrato:
     - Un tipo desconocido en `tipos` responde 400, para detectar errores de escritura en el frontend.
-    - El rango máximo es de 31 días (400 si se pide más), porque sin agrupar son unos 8 600 puntos por sensor y día.
+    - El rango máximo es de 24 h sin agrupar y de 31 días por hora. Así ninguna respuesta pasa de ~1,3 MB.
 - [x] `PATCH /dispositivos/{id}`:
   - Valida los rangos: umbral de 0 a 100 con hasta 2 decimales, duración de 1 a 60, espera ≥ 0.
   - Responde con el dispositivo completo.
   - Un cuerpo vacío o sin campos conocidos responde 400.
-- [x] Pruebas de integración: `DispositivoControllerTest` (8 pruebas, con transacción que se revierte).
+- [x] Pruebas de integración: `DispositivoControllerTest` (10 pruebas, con transacción que se revierte).
 - `ApiException` no necesitó códigos nuevos en esta fase: los de riego y alertas se agregan en las fases 3 y 4.
 
 **Terminada cuando:** con el historial de la fase 1, la consulta con `agrupacion=HORA` devuelve unas 24 filas por sensor, y un `PATCH` con `umbralRiego: 150` responde 400 `VALIDACION`.
