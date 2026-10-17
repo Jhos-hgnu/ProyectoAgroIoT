@@ -237,7 +237,11 @@ X-Api-Key: <clave>
 { "dispositivoId": "maceta-01", "estado": "EJECUTADO", "detalle": null }
 ```
 
-`estado` es `EJECUTADO` o `FALLIDO`. Responde 200 con `{ "id": 88, "estado": "EJECUTADO" }`. 409 `COMANDO_NO_ENVIADO` si el comando no está en `ENVIADO`.
+`estado` es `EJECUTADO` o `FALLIDO`. Responde 200 con `{ "id": 88, "estado": "EJECUTADO" }`. Errores:
+
+- 409 `COMANDO_NO_ENVIADO` si el comando no está en `ENVIADO`. Incluye la confirmación que llega más de 2 min después de crearse el comando: el comando queda `EXPIRADO`.
+- 404 `COMANDO_NO_ENCONTRADO` si el comando no existe o es de otro `dispositivoId`.
+- 400 `VALIDACION` si `estado` no es `EJECUTADO` ni `FALLIDO`.
 
 ### GET /dispositivos/{id}
 
@@ -308,11 +312,11 @@ Cuerpo opcional `{ "duracionSeg": 5 }` (si falta, la duración configurada). Res
 { "id": 88, "origen": "MANUAL", "estado": "PENDIENTE", "duracionSeg": 5, "humedadSueloAntes": 31.4, "creadoEn": "2026-10-16T16:20:07Z", "finalizadoEn": null }
 ```
 
-Errores: 409 `BOMBA_NO_DISPONIBLE`, 409 `RIEGO_EN_CURSO`.
+Errores: 409 `BOMBA_NO_DISPONIBLE`, 409 `RIEGO_EN_CURSO`, 400 `VALIDACION` (`duracionSeg` fuera de 1–60).
 
 ### GET /dispositivos/{id}/riegos
 
-`?limite=20`. Lista con el formato del POST, del más reciente al más antiguo.
+`?limite=20` (de 1 a 100). Lista con el formato del POST, del más reciente al más antiguo.
 
 ### GET /dispositivos/{id}/alertas y POST /alertas/{id}/resolver
 
@@ -370,7 +374,9 @@ Se crea un comando `AUTOMATICO` solo si: `riego_automatico` y `tiene_bomba` son 
 
 ### Ciclo de un comando
 
-`PENDIENTE` → `ENVIADO` (viaja en la respuesta de la siguiente lectura) → `EJECUTADO` o `FALLIDO` (confirma el ESP32). Sin confirmación en 2 min → `EXPIRADO` (consulta 6, antes de crear o entregar un comando; sin tareas programadas). Un `FALLIDO` abre una alerta del sistema `CRITICA`: "La bomba no se activó".
+`PENDIENTE` → `ENVIADO` (viaja en la respuesta de la siguiente lectura) → `EJECUTADO` o `FALLIDO` (confirma el ESP32). Sin confirmación en 2 min → `EXPIRADO` (consulta 6, antes de crear, entregar o confirmar un comando; sin tareas programadas). Un `FALLIDO` abre una alerta del sistema `CRITICA`: "La bomba no se activó (riego #88)".
+
+Un riego automático se crea en el paso 5 de `POST /lecturas` y el paso 6 lo entrega en la respuesta de esa **misma** lectura: el ESP32 no espera 10 s más.
 
 ### Alertas
 
@@ -407,7 +413,7 @@ Datos:
 
 ## Pruebas de los modos con sensores parciales
 
-- [ ] Solo `HUMEDAD_SUELO`: con el valor bajo 35 % se crea un riego automático que llega en la respuesta de la siguiente lectura.
+- [ ] Solo `HUMEDAD_SUELO`: con el valor bajo 35 % se crea un riego automático que llega en la respuesta de esa misma lectura.
 - [ ] Solo `TEMPERATURA` y `HUMEDAD_AIRE`: el dashboard muestra 2 tarjetas; el riego manual funciona y el automático no.
 - [ ] Un sensor deja de enviar: a los 2 min aparece "Sin datos" y su gráfica conserva el historial.
 - [ ] `HUMEDAD_SUELO` con valor 150: solo esa medición se descarta y la lectura responde 201.

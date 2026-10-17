@@ -64,26 +64,28 @@ Corresponde al orden 2 y 5 del contrato.
 
 **Terminada cuando:** con el historial de la fase 1, la consulta con `agrupacion=HORA` devuelve unas 24 filas por sensor, y un `PATCH` con `umbralRiego: 150` responde 400 `VALIDACION`.
 
-### Fase 3 — Riego: manual, automático y ciclo completo · MVP
+### Fase 3 — Riego: manual, automático y ciclo completo · MVP · hecha
 
 Corresponde al orden 3 y 4 del contrato. Es la parte más vistosa de la demo.
 
-- [ ] `POST /dispositivos/{id}/riegos`:
+- [x] `POST /dispositivos/{id}/riegos`:
   - Responde 202 con el comando creado en `PENDIENTE`.
   - Responde 409 `BOMBA_NO_DISPONIBLE` si el dispositivo no tiene bomba, y 409 `RIEGO_EN_CURSO` si ya hay un comando abierto (se atrapa la violación de `uq_comando_abierto`).
   - Antes de crear el comando expira los viejos con la consulta 6.
   - Guarda en `humedadSueloAntes` el último valor de humedad del suelo, o `null` si no hay.
-- [ ] `GET /dispositivos/{id}/riegos?limite=20`.
-- [ ] `POST /comandos/{comandoId}/confirmacion`:
+- [x] `GET /dispositivos/{id}/riegos?limite=20`.
+- [x] `POST /comandos/{comandoId}/confirmacion`:
   - Pasa el comando de `ENVIADO` a `EJECUTADO` o `FALLIDO`; si no está en `ENVIADO`, responde 409 `COMANDO_NO_ENVIADO`.
   - Un `FALLIDO` abre una alerta del sistema `CRITICA`.
-- [ ] Paso 5 de `POST /lecturas`, la parte de riego: si la lectura es en tiempo real (`medidaEn` de hace menos de 2 min), aplica la regla de riego automático con la consulta 7.
+- [x] Paso 5 de `POST /lecturas`, la parte de riego: si la lectura es en tiempo real (`medidaEn` de hace menos de 2 min), aplica la regla de riego automático con la consulta 7.
 
 **Terminada cuando:** se ven estos cuatro casos con el simulador en vivo:
 1. Riego manual: el comando pasa por `PENDIENTE` → `ENVIADO` → `EJECUTADO`.
 2. Con la humedad bajo el umbral se crea un riego `AUTOMATICO`.
 3. Si el simulador no confirma, el comando termina en `EXPIRADO`.
 4. Con `tieneBomba: false`, el riego responde 409.
+
+Implementado en `RiegoService`, con 14 pruebas en `RiegoTest`. También se probó de punta a punta con el simulador: manual `EJECUTADO`, `FALLIDO` con alerta, automático con `--escenario seco` y `EXPIRADO` a los 2:00 con `--confirmacion nunca`. Las decisiones que el contrato no fijaba quedaron anotadas en él: el riego automático se entrega en la misma lectura, la expiración también se revisa al confirmar y `limite` va de 1 a 100.
 
 ### Fase 4 — Alertas · MVP
 

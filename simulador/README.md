@@ -20,7 +20,7 @@ node simulador.mjs --ayuda                      # todas las opciones
 | --- | --- |
 | Que funciona con un solo sensor | `node simulador.mjs vivo --sensores suelo` |
 | Solo el DHT22 | `node simulador.mjs vivo --sensores temp,aire` |
-| Riego automático (el suelo baja de 35 % en ~30 s) | `node simulador.mjs vivo --escenario seco` |
+| Riego automático (el suelo baja de 35 % en ~40 s) | `node simulador.mjs vivo --escenario seco` |
 | Alerta de temperatura alta (> 32 °C en ~40 s) | `node simulador.mjs vivo --escenario calor` |
 | Riego que falla (alerta crítica) | `node simulador.mjs vivo --confirmacion falla` |
 | Riego que nunca se confirma (`EXPIRADO`) | `node simulador.mjs vivo --confirmacion nunca` |
@@ -36,3 +36,7 @@ Alias de sensores: `suelo`, `temp`, `aire`, `luz` (o los códigos `HUMEDAD_SUELO
 - **Errores:**
   - Si la clave es incorrecta (401) o el dispositivo no existe (404), el simulador se detiene.
   - Cualquier otro error, incluida una API caída, se muestra y el simulador sigue intentando, como haría el ESP32.
+
+## Para repetir el riego automático en la demo
+
+La API no crea un riego automático si hubo otro riego (manual o automático) en los últimos `esperaRiegoMin` minutos, que por defecto son 10. Para repetirlo varias veces seguidas, baja la espera con `PATCH /dispositivos/maceta-01` y `{ "esperaRiegoMin": 0 }`, y al terminar vuelve a ponerla en 10. Las peticiones están en `docs/demo.http`.

@@ -153,7 +153,7 @@ GET {{api}}/dispositivos/{{dispositivo}}/mediciones?agrupacion=HORA
 GET {{api}}/dispositivos/{{dispositivo}}/mediciones?tipos=HUMEDAD_SUELO,TEMPERATURA&agrupacion=HORA
 
 ### =====================================================================
-### Riego (fase 3)
+### Riego (fase 3 · lista)
 ### =====================================================================
 
 ### Regar ahora con la duración configurada → 202 PENDIENTE
