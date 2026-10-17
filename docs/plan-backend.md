@@ -134,10 +134,19 @@ Implementado en `AlertaService`, con 9 pruebas en `AlertaTest`. Se probó con `-
 
 ## Guion sugerido para la demo (fases 1 a 4)
 
-1. `docker compose up -d`, arrancar la API y mostrar `GET /salud`.
-2. Cargar 24 h de historial con el simulador y mostrar `GET /mediciones?agrupacion=HORA`.
-3. Arrancar el simulador en vivo solo con `HUMEDAD_SUELO`: `GET /dispositivos/maceta-01` muestra **una** tarjeta. Esto demuestra que el sistema funciona con lo que esté armado.
-4. Riego manual desde `docs/demo.http` y su paso por `PENDIENTE` → `ENVIADO` → `EJECUTADO`. Pedir un segundo riego mientras el primero sigue abierto da 409.
-5. Bajar el umbral con `PATCH` y ver cómo se crea un riego automático.
-6. Forzar una temperatura alta para que se abra una alerta, y luego dejar que se cierre sola.
+Validado de principio a fin sobre una base vacía (ver [`validacion-mvp.md`](validacion-mvp.md)).
+
+1. `docker compose up -d`, arrancar la API y ejecutar `node simulador.mjs salud`.
+2. `node simulador.mjs historial` (24 h en unos 8 s) y mostrar `GET /mediciones?agrupacion=HORA`: una serie por sensor, con promedio, mínimo y máximo por hora.
+3. `node simulador.mjs vivo --sensores suelo` y mostrar `GET /dispositivos/maceta-01`:
+   - La humedad del suelo aparece `ACTIVO`.
+   - Los otros tres sensores (tienen historial, pero ya no envían) aparecen `SIN_DATOS`: el frontend los pinta en gris y la API no inventa valores.
+   - Esto demuestra que el sistema funciona con lo que esté armado.
+4. `POST /riegos` desde `docs/demo.http`; un segundo `POST` da 409 `RIEGO_EN_CURSO`. El simulador recoge el comando y lo confirma: `GET /riegos` muestra `EJECUTADO`.
+5. Riego automático:
+   - Hacer `PATCH { "esperaRiegoMin": 0 }`, porque tras el riego manual la API espera 10 min.
+   - Ejecutar `node simulador.mjs vivo --sensores suelo --escenario seco`.
+   - En unos 40 s el suelo baja de 35 % y llega un riego `AUTOMATICO`.
+   - Al terminar, volver a poner `esperaRiegoMin` en 10.
+6. `node simulador.mjs vivo --sensores temp --escenario calor`: en aproximadamente 1 min se abre "Temperatura alta" en `GET /alertas`. Al volver a `--escenario normal`, la alerta se cierra sola.
 7. Errores: lectura sin `X-Api-Key` (401) y lectura con humedad 150 (se descarta y la lectura responde 201).
