@@ -7,7 +7,7 @@ backend/    API en Java 21 + Spring Boot (Maven)
 frontend/   React + TypeScript (Vite)
 db/         schema.sql y consultas.sql
 simulador/  hace de ESP32 mientras no hay electrónica (Node, sin dependencias)
-docs/       contrato-api.md (fuente de verdad), plan-backend.md, demo.http y validacion-mvp.md
+docs/       contrato-api.md (fuente de verdad), plan-backend.md, frontend-mvp.md, demo.http y validacion-mvp.md
 ```
 
 ## Requisitos

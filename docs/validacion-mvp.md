@@ -40,7 +40,7 @@ Cada prueba corre en una transacción que se revierte, así que no deja datos en
 
 ## Detalles conocidos (aceptables para un MVP)
 
-1. **El dashboard todavía usa datos fijos** (`potsData`) y no llama a la API. La demo es de la API. Conectar el dashboard es el siguiente paso con más impacto visual: el cliente tipado `src/api/cliente.ts` ya existe.
+1. **El dashboard todavía usa datos fijos** (`potsData`) y no llama a la API. La demo es de la API. Las instrucciones para conectarlo, con una estimación de 1 día, están en [`frontend-mvp.md`](frontend-mvp.md).
 2. **Firebase no está integrado** (fase 5), así que `/salud` responde `firebase: NO_CONFIGURADO`. El dashboard tendría que consultar la API cada pocos segundos para ver datos en vivo.
 3. **Memoria:** la API usa unos 445 MB sin límite de memoria configurado, y el plan gratuito de Render tiene 512 MB. Hay que vigilarlo al desplegar (fase 7).
 4. **Para repetir el riego automático en la demo** hay que bajar `esperaRiegoMin` a 0, porque por diseño la API espera 10 min entre riegos.
