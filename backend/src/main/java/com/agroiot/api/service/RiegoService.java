@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.agroiot.api.dto.ConfirmacionRequest;
 import com.agroiot.api.dto.ConfirmacionResponse;
 import com.agroiot.api.dto.RiegoResponse;
-import com.agroiot.api.entity.Alerta;
 import com.agroiot.api.entity.ComandoRiego;
 import com.agroiot.api.entity.Dispositivo;
 import com.agroiot.api.entity.DispositivoSensorId;
@@ -22,7 +21,6 @@ import com.agroiot.api.entity.EstadoComando;
 import com.agroiot.api.entity.OrigenComando;
 import com.agroiot.api.entity.Severidad;
 import com.agroiot.api.exception.ApiException;
-import com.agroiot.api.repository.AlertaRepository;
 import com.agroiot.api.repository.ComandoRiegoRepository;
 import com.agroiot.api.repository.DispositivoRepository;
 import com.agroiot.api.repository.DispositivoSensorRepository;
@@ -43,10 +41,10 @@ public class RiegoService {
 	private final DispositivoRepository dispositivos;
 	private final DispositivoSensorRepository dispositivoSensores;
 	private final ComandoRiegoRepository comandos;
-	private final AlertaRepository alertas;
+	private final AlertaService alertas;
 
 	public RiegoService(DispositivoRepository dispositivos, DispositivoSensorRepository dispositivoSensores,
-			ComandoRiegoRepository comandos, AlertaRepository alertas) {
+			ComandoRiegoRepository comandos, AlertaService alertas) {
 		this.dispositivos = dispositivos;
 		this.dispositivoSensores = dispositivoSensores;
 		this.comandos = comandos;
@@ -137,12 +135,11 @@ public class RiegoService {
 		Instant ahora = Instant.now();
 		c.finalizar(estado, req.detalle(), ahora);
 		if (estado == EstadoComando.FALLIDO) {
-			// Alerta del sistema (sin regla ni sensor). Se resuelve a mano.
-			alertas.save(new Alerta(c.getDispositivo(), null, null, null, Severidad.CRITICA,
-					"La bomba no se activó (riego #" + c.getId() + ")"));
+			alertas.abrirDelSistema(c.getDispositivo(), Severidad.CRITICA,
+					"La bomba no se activó (riego #" + c.getId() + ")");
 			log.warn("Riego #{} FALLIDO: {}", c.getId(), req.detalle());
 		}
-		// TODO (fase 5): publicar el nodo riego (y la alerta) en Firebase.
+		// TODO (fase 5): publicar el nodo riego en Firebase.
 		return new ConfirmacionResponse(c.getId(), c.getEstado());
 	}
 

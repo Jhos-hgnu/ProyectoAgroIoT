@@ -27,6 +27,7 @@ import com.agroiot.api.dto.ReporteResumen;
 import com.agroiot.api.dto.RiegoRequest;
 import com.agroiot.api.dto.RiegoResponse;
 import com.agroiot.api.exception.ApiException;
+import com.agroiot.api.service.AlertaService;
 import com.agroiot.api.service.DispositivoService;
 import com.agroiot.api.service.MedicionService;
 import com.agroiot.api.service.RiegoService;
@@ -42,11 +43,14 @@ public class DispositivoController {
 	private final DispositivoService dispositivos;
 	private final MedicionService mediciones;
 	private final RiegoService riegos;
+	private final AlertaService alertas;
 
-	public DispositivoController(DispositivoService dispositivos, MedicionService mediciones, RiegoService riegos) {
+	public DispositivoController(DispositivoService dispositivos, MedicionService mediciones, RiegoService riegos,
+			AlertaService alertas) {
 		this.dispositivos = dispositivos;
 		this.mediciones = mediciones;
 		this.riegos = riegos;
+		this.alertas = alertas;
 	}
 
 	@GetMapping
@@ -86,8 +90,9 @@ public class DispositivoController {
 	/** estado = ACTIVA (por defecto) o TODAS. */
 	@GetMapping("/alertas")
 	public List<AlertaResponse> alertas(@PathVariable String id,
-			@RequestParam(defaultValue = "ACTIVA") String estado) {
-		throw ApiException.noImplementado("GET /dispositivos/{id}/alertas");
+			@RequestParam(defaultValue = "ACTIVA") String estado,
+			@RequestParam(defaultValue = "50") @Min(1) @Max(200) int limite) {
+		return alertas.listar(id, estado, limite);
 	}
 
 	/** Responde 201 cuando se implemente. */

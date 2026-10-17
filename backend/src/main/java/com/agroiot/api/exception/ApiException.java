@@ -26,6 +26,10 @@ public class ApiException extends RuntimeException {
 		return new ApiException(HttpStatus.NOT_FOUND, "COMANDO_NO_ENCONTRADO", "No existe el comando " + id);
 	}
 
+	public static ApiException alertaNoEncontrada(Long id) {
+		return new ApiException(HttpStatus.NOT_FOUND, "ALERTA_NO_ENCONTRADA", "No existe la alerta " + id);
+	}
+
 	public static ApiException bombaNoDisponible(String dispositivoId) {
 		return new ApiException(HttpStatus.CONFLICT, "BOMBA_NO_DISPONIBLE",
 				"El dispositivo " + dispositivoId + " no tiene bomba");

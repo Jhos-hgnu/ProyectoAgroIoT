@@ -47,16 +47,18 @@ public class LecturaService {
 	private final DispositivoSensorRepository dispositivoSensores;
 	private final ComandoRiegoRepository comandos;
 	private final RiegoService riegos;
+	private final AlertaService alertas;
 
 	public LecturaService(DispositivoRepository dispositivos, TipoSensorRepository tiposSensor,
 			LecturaRepository lecturas, DispositivoSensorRepository dispositivoSensores,
-			ComandoRiegoRepository comandos, RiegoService riegos) {
+			ComandoRiegoRepository comandos, RiegoService riegos, AlertaService alertas) {
 		this.dispositivos = dispositivos;
 		this.tiposSensor = tiposSensor;
 		this.lecturas = lecturas;
 		this.dispositivoSensores = dispositivoSensores;
 		this.comandos = comandos;
 		this.riegos = riegos;
+		this.alertas = alertas;
 	}
 
 	@Transactional
@@ -106,16 +108,14 @@ public class LecturaService {
 		}
 		dispositivo.setUltimaConexion(ahora);
 
-		// 5. Solo en tiempo real (medidaEn de hace menos de 2 min): riego automático.
+		// 5. Solo en tiempo real (medidaEn de hace menos de 2 min): alertas y riego automático.
 		//    El historial se guarda pero no dispara riegos, alertas ni Firebase.
 		if (!medidaEn.isBefore(ahora.minus(TIEMPO_REAL))) {
-			BigDecimal humedadSuelo = lectura.getMediciones().stream()
-					.filter(m -> HUMEDAD_SUELO.equals(m.getTipo().getCodigo()))
-					.map(Medicion::getValor)
-					.findFirst()
-					.orElse(null);
-			riegos.evaluarRiegoAutomatico(dispositivo, humedadSuelo);
-			// TODO (fase 4): evaluar alertas. TODO (fase 5): actualizar Firebase.
+			Map<String, BigDecimal> valores = lectura.getMediciones().stream()
+					.collect(Collectors.toMap(m -> m.getTipo().getCodigo(), Medicion::getValor));
+			alertas.evaluar(dispositivo, valores);
+			riegos.evaluarRiegoAutomatico(dispositivo, valores.get(HUMEDAD_SUELO));
+			// TODO (fase 5): actualizar Firebase.
 		}
 
 		// 6. Expirar comandos viejos y entregar el PENDIENTE (si hay) marcándolo ENVIADO.
