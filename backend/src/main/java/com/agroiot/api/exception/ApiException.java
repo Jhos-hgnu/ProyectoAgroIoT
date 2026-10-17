@@ -22,6 +22,29 @@ public class ApiException extends RuntimeException {
 		return new ApiException(HttpStatus.NOT_FOUND, "DISPOSITIVO_NO_ENCONTRADO", "No existe el dispositivo " + id);
 	}
 
+	public static ApiException comandoNoEncontrado(Long id) {
+		return new ApiException(HttpStatus.NOT_FOUND, "COMANDO_NO_ENCONTRADO", "No existe el comando " + id);
+	}
+
+	public static ApiException alertaNoEncontrada(Long id) {
+		return new ApiException(HttpStatus.NOT_FOUND, "ALERTA_NO_ENCONTRADA", "No existe la alerta " + id);
+	}
+
+	public static ApiException bombaNoDisponible(String dispositivoId) {
+		return new ApiException(HttpStatus.CONFLICT, "BOMBA_NO_DISPONIBLE",
+				"El dispositivo " + dispositivoId + " no tiene bomba");
+	}
+
+	public static ApiException riegoEnCurso(String dispositivoId) {
+		return new ApiException(HttpStatus.CONFLICT, "RIEGO_EN_CURSO",
+				"Ya hay un riego pendiente para " + dispositivoId);
+	}
+
+	public static ApiException comandoNoEnviado(Long id, String estado) {
+		return new ApiException(HttpStatus.CONFLICT, "COMANDO_NO_ENVIADO",
+				"El comando " + id + " está " + estado + ", no ENVIADO");
+	}
+
 	public static ApiException sinMedicionesValidas(String mensaje) {
 		return new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "SIN_MEDICIONES_VALIDAS", mensaje);
 	}

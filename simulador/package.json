@@ -1,0 +1,15 @@
+{
+  "name": "agroiot-simulador",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Simulador del ESP32 de AgroIoT: envía lecturas a la API y confirma los riegos.",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "salud": "node simulador.mjs salud",
+    "historial": "node simulador.mjs historial",
+    "vivo": "node simulador.mjs vivo"
+  }
+}

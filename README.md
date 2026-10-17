@@ -6,7 +6,8 @@ Maceta con ESP32 y sensores que envía lecturas a una API (Spring Boot), guarda 
 backend/    API en Java 21 + Spring Boot (Maven)
 frontend/   React + TypeScript (Vite)
 db/         schema.sql y consultas.sql
-docs/       contrato-api.md (fuente de verdad de endpoints y JSON)
+simulador/  hace de ESP32 mientras no hay electrónica (Node, sin dependencias)
+docs/       contrato-api.md (fuente de verdad), plan-backend.md, frontend-mvp.md, demo.http y validacion-mvp.md
 ```
 
 ## Requisitos
@@ -43,6 +44,16 @@ docs/       contrato-api.md (fuente de verdad de endpoints y JSON)
    npm install
    npm run dev
    ```
+
+4. **Simulador** (hace de ESP32 y llena la base):
+
+   ```bash
+   cd simulador
+   node simulador.mjs historial   # 24 h de datos para las gráficas
+   node simulador.mjs vivo        # una lectura cada 10 s
+   ```
+
+   Para probar cada endpoint a mano: `docs/demo.http` (VS Code con REST Client, o IntelliJ).
 
 ## Secretos
 
