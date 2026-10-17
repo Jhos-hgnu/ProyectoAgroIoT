@@ -106,7 +106,7 @@ Content-Type: application/json
 }
 
 ### =====================================================================
-### Dispositivo (GET: fase 0 · lista; PATCH: fase 2)
+### Dispositivo (GET: fase 0 · lista; PATCH: fase 2 · lista)
 ### =====================================================================
 
 ### Configuración y sensores detectados (una tarjeta por sensor)
@@ -140,7 +140,7 @@ Content-Type: application/json
 { "tieneBomba": true }
 
 ### =====================================================================
-### Mediciones para gráficas (fase 2)
+### Mediciones para gráficas (fase 2 · lista)
 ### =====================================================================
 
 ### Últimas 24 h, sin agrupar

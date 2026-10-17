@@ -24,6 +24,8 @@ Todavía no tenemos el ESP32 ni los sensores, así que un **simulador** hace de 
 | Resto de endpoints | Responden 501 `NO_IMPLEMENTADO` |
 | Pruebas | Solo `ApiApplicationTests` (arranque del contexto) |
 
+Las pruebas usan la base local, así que antes de `./mvnw test` hay que levantar Docker y cargar `backend/.env`, igual que para correr la API.
+
 ## Fases
 
 Cada fase lista **qué se hace**, **dónde** y **cuándo está terminada**. "Terminada" significa que se puede mostrar con el simulador o con `docs/demo.http`, no solo que compila.
@@ -42,16 +44,23 @@ Sin esto no hay demo, así que va primero. Detalle de uso en [`simulador/README.
 
 **Terminada cuando:** con la base vacía, `simulador historial` y luego `simulador vivo` llenan la base, y `GET /dispositivos/maceta-01` muestra los sensores enviados como `ACTIVO` y `conectado: true`.
 
-### Fase 2 — Consultas del dashboard · MVP
+### Fase 2 — Consultas del dashboard · MVP · hecha
 
 Corresponde al orden 2 y 5 del contrato.
 
-- [ ] `GET /dispositivos/{id}/mediciones`:
+- [x] `GET /dispositivos/{id}/mediciones` (`MedicionService` y `SerieRepository`):
   - Sin agrupar usa la consulta 4 de `db/consultas.sql`; por hora usa la consulta 1, que da promedio, `min` y `max`.
   - Si faltan `desde` o `hasta`, toma las últimas 24 h. También acepta el filtro `tipos`.
   - Devuelve solo las series que tienen datos.
-- [ ] `PATCH /dispositivos/{id}`: validar los rangos (umbral de 0 a 100, duración de 1 a 60, espera ≥ 0) y responder con el dispositivo completo, reutilizando `DispositivoService.obtener`.
-- [ ] Ampliar `ApiException` con los códigos que falten.
+  - Decisiones que el contrato no fijaba:
+    - Un tipo desconocido en `tipos` responde 400, para detectar errores de escritura en el frontend.
+    - El rango máximo es de 31 días (400 si se pide más), porque sin agrupar son unos 8 600 puntos por sensor y día.
+- [x] `PATCH /dispositivos/{id}`:
+  - Valida los rangos: umbral de 0 a 100 con hasta 2 decimales, duración de 1 a 60, espera ≥ 0.
+  - Responde con el dispositivo completo.
+  - Un cuerpo vacío o sin campos conocidos responde 400.
+- [x] Pruebas de integración: `DispositivoControllerTest` (8 pruebas, con transacción que se revierte).
+- `ApiException` no necesitó códigos nuevos en esta fase: los de riego y alertas se agregan en las fases 3 y 4.
 
 **Terminada cuando:** con el historial de la fase 1, la consulta con `agrupacion=HORA` devuelve unas 24 filas por sensor, y un `PATCH` con `umbralRiego: 150` responde 400 `VALIDACION`.
 
