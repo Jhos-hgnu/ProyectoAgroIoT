@@ -1,5 +1,22 @@
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities;*/
+@import "bootstrap/dist/css/bootstrap.min.css";
+@import "bootstrap-icons/font/bootstrap-icons.css";
+
+:root {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
-  padding: 16px;
-  font-family: system-ui, sans-serif;
+  background-color: #0F172A;
+  color: #F8FAFC;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.custom-search-input::placeholder,
+.custom-login-input::placeholder {
+  color: #94A3B8 !important;
+  opacity: 1;
 }
