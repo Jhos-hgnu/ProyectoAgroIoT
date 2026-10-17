@@ -177,7 +177,7 @@ Content-Type: application/json
 { "dispositivoId": "{{dispositivo}}", "estado": "EJECUTADO", "detalle": null }
 
 ### =====================================================================
-### Alertas (fase 4)
+### Alertas (fase 4 · lista)
 ### =====================================================================
 
 ### Alertas activas

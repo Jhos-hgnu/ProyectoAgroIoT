@@ -21,7 +21,7 @@ node simulador.mjs --ayuda                      # todas las opciones
 | Que funciona con un solo sensor | `node simulador.mjs vivo --sensores suelo` |
 | Solo el DHT22 | `node simulador.mjs vivo --sensores temp,aire` |
 | Riego automático (el suelo baja de 35 % en ~40 s) | `node simulador.mjs vivo --escenario seco` |
-| Alerta de temperatura alta (> 32 °C en ~40 s) | `node simulador.mjs vivo --escenario calor` |
+| Alerta de temperatura alta (> 32 °C en ~1 min) | `node simulador.mjs vivo --escenario calor` |
 | Riego que falla (alerta crítica) | `node simulador.mjs vivo --confirmacion falla` |
 | Riego que nunca se confirma (`EXPIRADO`) | `node simulador.mjs vivo --confirmacion nunca` |
 | Gráficas de una semana | `node simulador.mjs historial --horas 167 --cada 15` |

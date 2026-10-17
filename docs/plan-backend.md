@@ -87,17 +87,25 @@ Corresponde al orden 3 y 4 del contrato. Es la parte más vistosa de la demo.
 
 Implementado en `RiegoService`, con 14 pruebas en `RiegoTest`. También se probó de punta a punta con el simulador: manual `EJECUTADO`, `FALLIDO` con alerta, automático con `--escenario seco` y `EXPIRADO` a los 2:00 con `--confirmacion nunca`. Las decisiones que el contrato no fijaba quedaron anotadas en él: el riego automático se entrega en la misma lectura, la expiración también se revisa al confirmar y `limite` va de 1 a 100.
 
-### Fase 4 — Alertas · MVP
+### Fase 4 — Alertas · MVP · hecha
 
 Corresponde al orden 4 del contrato.
 
-- [ ] Paso 5 de `POST /lecturas`, la parte de alertas: con cada medición aceptada en tiempo real se evalúan las reglas activas de `regla_alerta`.
+- [x] Paso 5 de `POST /lecturas`, la parte de alertas: con cada medición aceptada en tiempo real se evalúan las reglas activas de `regla_alerta`.
   - Si se cumple la condición y no hay alerta abierta, se abre una.
   - Si deja de cumplirse, la alerta abierta se cierra sola.
-- [ ] `GET /dispositivos/{id}/alertas?estado=ACTIVA|TODAS`, de la más reciente a la más antigua.
-- [ ] `POST /alertas/{id}/resolver`: responde 404 `ALERTA_NO_ENCONTRADA` si la alerta no existe.
+- [x] `GET /dispositivos/{id}/alertas?estado=ACTIVA|TODAS`, de la más reciente a la más antigua.
+- [x] `POST /alertas/{id}/resolver`: responde 404 `ALERTA_NO_ENCONTRADA` si la alerta no existe.
 
 **Terminada cuando:** el simulador envía temperatura alta → aparece una alerta activa → vuelve a valores normales → la alerta se cierra sola. El cierre manual también funciona.
+
+Implementado en `AlertaService`, con 9 pruebas en `AlertaTest`. Se probó con `--escenario calor`: la alerta se abrió a los 32,76 °C y se cerró sola al volver a lo normal. Lo que el contrato no fijaba quedó anotado en él:
+- `limite` va de 1 a 200.
+- Resolver una alerta ya resuelta no cambia nada.
+- La comparación con el umbral es estricta.
+- Si se resuelve a mano una alerta cuya condición sigue, la siguiente lectura abre otra.
+
+**Con esto el MVP de la demo (fases 1 a 4) está completo.**
 
 ### Fase 5 — Firebase en vivo
 

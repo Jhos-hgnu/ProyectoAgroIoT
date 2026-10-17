@@ -320,7 +320,7 @@ Errores: 409 `BOMBA_NO_DISPONIBLE`, 409 `RIEGO_EN_CURSO`, 400 `VALIDACION` (`dur
 
 ### GET /dispositivos/{id}/alertas y POST /alertas/{id}/resolver
 
-GET acepta `?estado=ACTIVA` (por defecto) o `TODAS`, más reciente primero. POST sin cuerpo; devuelve la alerta con `resueltaEn` lleno.
+GET acepta `?estado=ACTIVA` (por defecto) o `TODAS` y `?limite=50` (de 1 a 200), más reciente primero; otro `estado` responde 400 `VALIDACION`. POST sin cuerpo; devuelve la alerta con `resueltaEn` lleno. Si ya estaba resuelta, la devuelve igual (repetirlo no cambia nada); 404 `ALERTA_NO_ENCONTRADA` si no existe.
 
 ```json
 [
@@ -384,6 +384,9 @@ Un riego automático se crea en el paso 5 de `POST /lecturas` y el paso 6 lo ent
 - Si el valor cumple la condición y no hay alerta abierta para esa regla → se abre.
 - Si ya no la cumple y hay alerta abierta → se cierra sola (`resuelta_en = now()`).
 - Un sensor que deja de enviar no abre ni cierra alertas.
+- La comparación es estricta: con la regla `TEMPERATURA > 32`, el valor 32 no abre alerta.
+- Si alguien resuelve a mano una alerta cuya condición sigue cumpliéndose, la siguiente lectura abre una nueva.
+- Las alertas del sistema (riego fallido) no tienen regla y no se cierran solas: se resuelven a mano.
 
 ### Estado de sensores y conexión
 
