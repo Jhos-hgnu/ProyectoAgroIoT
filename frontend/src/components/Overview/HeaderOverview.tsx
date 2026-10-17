@@ -1,13 +1,44 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import type { PotData } from '../../data/potsData';
+import { Proximamente } from '../Proximamente';
+
+interface LiveHeaderData {
+  conectado: boolean;
+  actualizadoEn: Date | null;
+  tieneBomba: boolean;
+  duracionRiegoSeg: number | null;
+}
 
 interface HeaderOverviewProps {
   pot: PotData;
   isIrrigating: boolean;
   onIrrigate: () => void;
+  live?: LiveHeaderData;
 }
 
-export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigating, onIrrigate }) => {
+export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigating, onIrrigate, live }) => {
+  const [ahora, setAhora] = useState<number | null>(null);
+  const isLive = live !== undefined;
+
+  useEffect(() => {
+    if (!isLive) return;
+    const interval = window.setInterval(() => setAhora(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [isLive]);
+
+  const edadActualizacion = live?.actualizadoEn && ahora !== null
+    ? Math.max(0, Math.floor((ahora - live.actualizadoEn.getTime()) / 1000))
+    : null;
+  const deshabilitado = isIrrigating || (live !== undefined && !live.tieneBomba);
+  const textoRiego = live
+    ? !live.tieneBomba
+      ? 'Sin bomba'
+      : isIrrigating
+        ? 'Regando…'
+        : `Regar ahora (${live.duracionRiegoSeg ?? '—'} s)`
+    : isIrrigating ? 'Regando...' : 'Dosis Manual 100ml';
+  const connectionColor = live?.conectado ? '#10B981' : '#F87171';
+
   return (
     <div 
       className="p-4 rounded-4 border border-secondary border-opacity-10 shadow-sm"
@@ -32,9 +63,9 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
               right: '-2px', 
               width: '12px', 
               height: '12px', 
-              backgroundColor: '#10B981',
-              boxShadow: '0 0 8px #10B981',
-              animation: 'spinner-grow 1.5s infinite linear'
+              backgroundColor: live ? connectionColor : '#10B981',
+              boxShadow: `0 0 8px ${live ? connectionColor : '#10B981'}`,
+              animation: live?.conectado === false ? 'none' : 'spinner-grow 1.5s infinite linear'
             }}
           ></span>
         </div>
@@ -47,7 +78,7 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
             className="badge rounded-pill fw-semibold border border-success border-opacity-25 ms-1" 
             style={{ fontSize: '11px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10B981', padding: '6px 12px' }}
           >
-            {pot.zone} • {pot.sector}
+            {pot.zone ?? (live ? <Proximamente /> : '—')} • {pot.sector ?? (live ? <Proximamente /> : '—')}
           </span>
         </div>
       </div>
@@ -55,21 +86,29 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
       {/* FILA 2: Metadatos y Botones */}
       <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mt-3.5 pt-3 border-top border-secondary border-opacity-10">
         <div className="d-flex align-items-center gap-3 flex-wrap" style={{ fontSize: '13px', color: '#94A3B8' }}>
-          <span className="d-flex align-items-center gap-2" style={{ color: '#10B981' }}>
+          <span className="d-flex align-items-center gap-2" style={{ color: live ? connectionColor : '#10B981' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <rect x="2" y="7" width="16" height="10" rx="2"/>
               <line x1="22" y1="11" x2="22" y2="13"/>
               <line x1="6" y1="11" x2="6" y2="13"/>
               <line x1="10" y1="11" x2="10" y2="13"/>
             </svg>
-            {pot.battery}
+            {live ? (
+              <>
+                {live.conectado ? 'Conectado' : 'Desconectado'}
+                <span className="ms-1 text-secondary">•</span>
+                <Proximamente />
+              </>
+            ) : pot.battery ?? <Proximamente />}
           </span>
           <span style={{ color: '#334155' }}>•</span>
           <span className="d-flex align-items-center gap-2">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" strokeWidth="2">
               <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
             </svg>
-            Sincronizado hace 12s
+            {live
+              ? edadActualizacion === null ? 'Esperando primera actualización' : `Actualizado hace ${edadActualizacion} s`
+              : 'Sincronizado hace 12s'}
           </span>
         </div>
 
@@ -79,43 +118,45 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
             type="button"
             className="btn btn-sm fw-semibold d-flex align-items-center gap-2 border-0 px-3.5 py-2.5 rounded-3 text-white shadow-sm"
             style={{ 
-              backgroundColor: isIrrigating ? '#0284C7' : '#0284C7', 
+              backgroundColor: '#0284C7',
               fontSize: '13px',
-              cursor: isIrrigating ? 'not-allowed' : 'pointer',
-              opacity: isIrrigating ? 0.8 : 1
+              cursor: deshabilitado ? 'not-allowed' : 'pointer',
+              opacity: deshabilitado ? 0.8 : 1
             }}
             onClick={onIrrigate}
-            disabled={isIrrigating}
+            disabled={deshabilitado}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
             </svg>
-            <span>{isIrrigating ? 'Regando...' : 'Dosis Manual 100ml'}</span>
+            <span>{textoRiego}</span>
           </button>
 
           <button 
             type="button"
             className="btn btn-sm fw-medium d-flex align-items-center gap-2 border border-secondary border-opacity-25 px-3.5 py-2.5 rounded-3 text-white shadow-sm"
-            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: 'pointer' }}
+            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: live ? 'not-allowed' : 'pointer', opacity: live ? 0.7 : 1 }}
+            disabled={live !== undefined}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
               <polyline points="12 6 12 12 16 14"/>
             </svg>
-            <span>Configurar Horario</span>
+            <span>{live ? 'Próximamente' : 'Configurar Horario'}</span>
           </button>
 
           <button 
             type="button"
             className="btn btn-sm fw-medium d-flex align-items-center gap-2 border border-secondary border-opacity-25 px-3.5 py-2.5 rounded-3 text-white shadow-sm"
-            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: 'pointer' }}
+            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: live ? 'not-allowed' : 'pointer', opacity: live ? 0.7 : 1 }}
+            disabled={live !== undefined}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            <span>Exportar CSV</span>
+            <span>{live ? 'Próximamente' : 'Exportar CSV'}</span>
           </button>
         </div>
       </div>
