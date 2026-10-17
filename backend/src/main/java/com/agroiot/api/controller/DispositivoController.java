@@ -26,15 +26,20 @@ import com.agroiot.api.dto.RiegoRequest;
 import com.agroiot.api.dto.RiegoResponse;
 import com.agroiot.api.exception.ApiException;
 import com.agroiot.api.service.DispositivoService;
+import com.agroiot.api.service.MedicionService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/dispositivos/{id}")
 public class DispositivoController {
 
 	private final DispositivoService dispositivos;
+	private final MedicionService mediciones;
 
-	public DispositivoController(DispositivoService dispositivos) {
+	public DispositivoController(DispositivoService dispositivos, MedicionService mediciones) {
 		this.dispositivos = dispositivos;
+		this.mediciones = mediciones;
 	}
 
 	@GetMapping
@@ -44,17 +49,18 @@ public class DispositivoController {
 
 	@PatchMapping
 	public DispositivoResponse actualizar(@PathVariable String id,
-			@RequestBody(required = false) DispositivoPatchRequest req) {
-		throw ApiException.noImplementado("PATCH /dispositivos/{id}");
+			@Valid @RequestBody(required = false) DispositivoPatchRequest req) {
+		return dispositivos.actualizar(id, req);
 	}
 
+	/** tipos separados por coma; desde/hasta en ISO-8601 (por defecto, últimas 24 h). */
 	@GetMapping("/mediciones")
 	public MedicionesResponse mediciones(@PathVariable String id,
 			@RequestParam(required = false) Instant desde,
 			@RequestParam(required = false) Instant hasta,
 			@RequestParam(required = false) List<String> tipos,
 			@RequestParam(defaultValue = "NINGUNA") Agrupacion agrupacion) {
-		throw ApiException.noImplementado("GET /dispositivos/{id}/mediciones");
+		return mediciones.consultar(id, desde, hasta, tipos, agrupacion);
 	}
 
 	/** Responde 202 cuando se implemente. */

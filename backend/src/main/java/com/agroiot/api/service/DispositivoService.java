@@ -7,6 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.agroiot.api.dto.DispositivoPatchRequest;
 import com.agroiot.api.dto.DispositivoResponse;
 import com.agroiot.api.dto.EstadoSensor;
 import com.agroiot.api.dto.SensorDetectado;
@@ -49,6 +50,28 @@ public class DispositivoService {
 		return new DispositivoResponse(d.getId(), d.getNombre(), d.getUbicacion(), d.isTieneBomba(),
 				d.isRiegoAutomatico(), d.isTieneBomba() && sueloActivo, d.getUmbralRiego(),
 				d.getDuracionRiegoSeg(), d.getEsperaRiegoMin(), d.getUltimaConexion(), conectado, sensores);
+	}
+
+	/** PATCH /dispositivos/{id}: cambia solo los campos que llegan (los null no se tocan). */
+	@Transactional
+	public DispositivoResponse actualizar(String id, DispositivoPatchRequest cambios) {
+		if (cambios == null || (cambios.riegoAutomatico() == null && cambios.umbralRiego() == null
+				&& cambios.duracionRiegoSeg() == null && cambios.esperaRiegoMin() == null
+				&& cambios.tieneBomba() == null)) {
+			throw ApiException.validacion("Envía al menos un campo: riegoAutomatico, umbralRiego, "
+					+ "duracionRiegoSeg, esperaRiegoMin o tieneBomba");
+		}
+		Dispositivo d = dispositivos.findById(id).orElseThrow(() -> ApiException.dispositivoNoEncontrado(id));
+
+		if (cambios.riegoAutomatico() != null) d.setRiegoAutomatico(cambios.riegoAutomatico());
+		if (cambios.umbralRiego() != null) d.setUmbralRiego(cambios.umbralRiego().setScale(2)); // como NUMERIC(5,2)
+		if (cambios.duracionRiegoSeg() != null) d.setDuracionRiegoSeg(cambios.duracionRiegoSeg());
+		if (cambios.esperaRiegoMin() != null) d.setEsperaRiegoMin(cambios.esperaRiegoMin());
+		if (cambios.tieneBomba() != null) d.setTieneBomba(cambios.tieneBomba());
+		// TODO (fase 5): publicar riegoAutomatico, umbralRiego y tieneBomba en Firebase.
+
+		dispositivos.flush();
+		return obtener(id);
 	}
 
 	private static SensorDetectado aSensor(DispositivoSensor ds, Instant ahora) {
