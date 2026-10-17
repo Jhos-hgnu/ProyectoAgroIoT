@@ -28,17 +28,17 @@ Todavía no tenemos el ESP32 ni los sensores, así que un **simulador** hace de 
 
 Cada fase lista **qué se hace**, **dónde** y **cuándo está terminada**. "Terminada" significa que se puede mostrar con el simulador o con `docs/demo.http`, no solo que compila.
 
-### Fase 1 — Simulador y datos de demo · MVP
+### Fase 1 — Simulador y datos de demo · MVP · hecha
 
-Sin esto no hay demo, así que va primero.
+Sin esto no hay demo, así que va primero. Detalle de uso en [`simulador/README.md`](../simulador/README.md).
 
-- [ ] `simulador/` con un script en Node 20, sin dependencias, porque `fetch` ya viene incluido. Toma la URL de la API y la `X-Api-Key` de variables de entorno.
+- [x] `simulador/` con un script en Node 20, sin dependencias, porque `fetch` ya viene incluido. Toma la URL de la API y la `X-Api-Key` de variables de entorno.
   - Modo **en vivo**: una lectura cada 10 s con valores que varían de forma realista. Por ejemplo, la humedad del suelo baja poco a poco y sube después de un riego.
   - Modo **historial**: carga 24 h de lecturas con `medidaEn` para que las gráficas y el reporte tengan datos.
   - Opción `--sensores` para elegir qué sensores envía (`HUMEDAD_SUELO`, `TEMPERATURA,HUMEDAD_AIRE`, etc.) y así mostrar los modos con sensores parciales del contrato.
   - Si la respuesta de `/lecturas` trae `comando`, espera `duracionSeg` y lo confirma con `POST /comandos/{id}/confirmacion`. Con una opción, el simulador puede fallar o no confirmar, para mostrar los estados `FALLIDO` y `EXPIRADO`.
-- [ ] `docs/demo.http`: peticiones listas para ejecutar desde VS Code (REST Client) o IntelliJ, una por cada endpoint, incluidos los casos de error (401, 404, 409, 422).
-- [ ] README de `simulador/` con los comandos.
+- [x] `docs/demo.http`: peticiones listas para ejecutar desde VS Code (REST Client) o IntelliJ, una por cada endpoint, incluidos los casos de error (401, 404, 409, 422).
+- [x] README de `simulador/` con los comandos.
 
 **Terminada cuando:** con la base vacía, `simulador historial` y luego `simulador vivo` llenan la base, y `GET /dispositivos/maceta-01` muestra los sensores enviados como `ACTIVO` y `conectado: true`.
 
