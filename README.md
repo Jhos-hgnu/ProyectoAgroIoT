@@ -6,7 +6,7 @@ Maceta con ESP32 y sensores que envía lecturas a una API (Spring Boot), guarda 
 backend/    API en Java 21 + Spring Boot (Maven)
 frontend/   React + TypeScript (Vite)
 db/         schema.sql y consultas.sql
-docs/       contrato-api.md (fuente de verdad de endpoints y JSON)
+docs/       contrato-api.md (fuente de verdad de endpoints y JSON) y plan-backend.md
 ```
 
 ## Requisitos
