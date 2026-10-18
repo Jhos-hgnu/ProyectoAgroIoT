@@ -353,7 +353,7 @@ Cuerpo `{ "horas": 24 }` (1–72, por defecto 24). Responde 201:
 }
 ```
 
-Errores: 422 `DATOS_INSUFICIENTES` (menos de 10 mediciones en la ventana), 502 `IA_NO_DISPONIBLE` (no se guarda nada). `GET /dispositivos/{id}/reportes` devuelve la lista sin `contenido`; `GET /reportes/{id}` el reporte completo.
+Errores: 422 `DATOS_INSUFICIENTES` (menos de 10 mediciones en la ventana), 502 `IA_NO_DISPONIBLE` (falla el modelo, responde vacío o falta `GEMINI_API_KEY`; no se guarda nada). La respuesta tarda unos segundos: el frontend debe mostrar que está generando y desactivar el botón. `GET /dispositivos/{id}/reportes` devuelve la lista sin `contenido`, del más reciente al más antiguo (`?limite=20`, de 1 a 100); `GET /reportes/{id}` el reporte completo, o 404 `REPORTE_NO_ENCONTRADO`.
 
 ### GET /salud
 
@@ -406,6 +406,23 @@ Calculados al consultar: sensor `ACTIVO` si `ultima_lectura` < 2 min, si no `SIN
 2. Menos de 10 mediciones → 422.
 3. Armar un JSON con dispositivo, ventana en hora de Guatemala, sensores con y sin datos, totales y resumen por hora, riegos por origen y estado, y alertas de la ventana.
 4. Enviarlo con el prompt (Spring AI + Gemini). Guardar el JSON en `resumen_entrada` y la respuesta en `contenido`.
+
+Forma del JSON (fechas como `2026-10-16 10:00`, en hora de Guatemala):
+
+```json
+{
+  "dispositivo": { "id": "maceta-01", "nombre": "Maceta 01", "ubicacion": "Laboratorio", "tieneBomba": true, "riegoAutomatico": true, "umbralRiegoSuelo": 35.00 },
+  "ventana": { "desde": "2026-10-15 10:20", "hasta": "2026-10-16 10:20", "horas": 24 },
+  "sensoresConDatos": ["HUMEDAD_SUELO", "TEMPERATURA"],
+  "sensoresSinDatos": ["HUMEDAD_AIRE", "LUZ"],
+  "totales": [{ "sensor": "TEMPERATURA", "unidad": "°C", "promedio": 24.10, "minimo": 19.80, "maximo": 31.20, "muestras": 8640 }],
+  "resumenPorHora": { "TEMPERATURA": [{ "hora": "2026-10-15 10:00", "promedio": 23.90, "minimo": 23.50, "maximo": 24.30, "muestras": 240 }] },
+  "riegos": [{ "origen": "AUTOMATICO", "estado": "EJECUTADO", "total": 3 }],
+  "alertas": [{ "sensor": "TEMPERATURA", "severidad": "ADVERTENCIA", "mensaje": "Temperatura alta", "valor": 33.10, "creada": "2026-10-15 14:02", "resuelta": "2026-10-15 15:10" }]
+}
+```
+
+La API llama al modelo fuera de una transacción, para no ocupar una conexión de la base mientras espera. Configuración: `GEMINI_API_KEY` (Google AI Studio) y `GEMINI_MODEL` (por defecto `gemini-2.5-flash`), con 60 s de tiempo máximo y un reintento.
 
 ```text
 Eres un agrónomo que revisa una maceta monitoreada con sensores.

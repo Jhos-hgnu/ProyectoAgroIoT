@@ -38,6 +38,8 @@ Cada prueba corre en una transacción que se revierte, así que no deja datos en
 | `POST` y `GET /dispositivos/{id}/riegos` | `GET /reportes/{id}` (fase 6) |
 | `GET /dispositivos/{id}/alertas`, `POST /alertas/{id}/resolver` | `GET /dispositivos/{id}/comandos/pendiente` (opcional) |
 
+Después de esta validación, la fase 6 implementó los tres endpoints de reportes.
+
 ## Detalles conocidos (aceptables para un MVP)
 
 1. **El dashboard todavía usa datos fijos** (`potsData`) y no llama a la API. La demo es de la API. Las instrucciones para conectarlo, con una estimación de 1 día, están en [`frontend-mvp.md`](frontend-mvp.md).

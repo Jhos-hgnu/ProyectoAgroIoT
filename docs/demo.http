@@ -193,7 +193,7 @@ POST {{api}}/alertas/1/resolver
 ### Reportes de IA (fase 6)
 ### =====================================================================
 
-### Generar un reporte de las últimas 24 h → 201
+### Generar un reporte de las últimas 24 h → 201 (sin GEMINI_API_KEY → 502 IA_NO_DISPONIBLE)
 POST {{api}}/dispositivos/{{dispositivo}}/reportes
 Content-Type: application/json
 
