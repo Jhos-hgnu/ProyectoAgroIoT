@@ -12,7 +12,7 @@ Hoy el dashboard muestra datos fijos (`src/data/potsData.ts`). Al terminar, `mac
 Decisiones ya tomadas por el equipo:
 
 1. **Los campos que la API no tiene se muestran como "Próximamente"**, sin ocultarlos y sin inventar valores.
-2. **Solo existe `maceta-01`.** La lista de macetas y el modal "Agregar maceta" quedan para más adelante.
+2. **Solo `maceta-01` se conecta a la API.** Las macetas 02, 03 y las que se agreguen desde el modal conservan datos ficticios; cambiar de maceta nunca debe consultar la API por ellas.
 3. **Polling cada 10 s.** Más adelante se reemplazará por Firebase (fase 5 del backend). Por eso el acceso a datos debe quedar en **un solo hook**, para que ese cambio no toque los componentes.
 
 ## Antes de empezar: entorno local
@@ -64,12 +64,12 @@ interface UseMaceta {
 export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta
 ```
 
-| Llamada (`api.*` de `cliente.ts`) | Frecuencia | Para qué |
-| --- | --- | --- |
-| `api.dispositivo('maceta-01')` | cada 10 s | Valores, estado de sensores, conexión, configuración |
-| `api.riegos('maceta-01', 20)` | cada 10 s | Estado del último riego y ciclos de las últimas 24 h |
-| `api.alertas('maceta-01')` | cada 10 s | Estado general de la maceta |
-| `api.mediciones('maceta-01', { agrupacion: 'HORA', tipos: ['TEMPERATURA'] })` | cada 60 s | Mínimo y máximo de temperatura en 24 h |
+| Llamada (`api.*` de `cliente.ts`)                                             | Frecuencia | Para qué                                             |
+|-------------------------------------------------------------------------------|------------|------------------------------------------------------|
+| `api.dispositivo('maceta-01')`                                                | cada 10 s  | Valores, estado de sensores, conexión, configuración |
+| `api.riegos('maceta-01', 20)`                                                 | cada 10 s  | Estado del último riego y ciclos de las últimas 24 h |
+| `api.alertas('maceta-01')`                                                    | cada 10 s  | Estado general de la maceta                          |
+| `api.mediciones('maceta-01', { agrupacion: 'HORA', tipos: ['TEMPERATURA'] })` | cada 60 s  | Mínimo y máximo de temperatura en 24 h               |
 
 Reglas del polling:
 
@@ -84,40 +84,40 @@ Funciones puras (fáciles de probar) que arman el `PotData` que ya usan los comp
 
 **Cambio de tipo:** en `PotData`, los campos marcados como "Próximamente" en la tabla pasan a aceptar `null`. Los valores de sensores también pueden ser `null`, porque el sensor puede no existir.
 
-| Campo de `PotData` | Fuente | Notas |
-| --- | --- | --- |
-| `id`, `number` | `'01'` fijo | — |
-| `name` | `dispositivo.nombre` | "Maceta 01" |
-| `zone` | `dispositivo.ubicacion` | "Laboratorio"; `null` → "Próximamente" |
-| `crop`, `sector` | — | **Próximamente** |
-| `battery` | — | **Próximamente** |
-| `soilMoisture` | sensor `HUMEDAD_SUELO` → `ultimoValor` | Ver "Sensores" |
-| `vwcRange` | `dispositivo.umbralRiego` | Texto `Riego bajo ${umbralRiego}%` |
-| `airTemp` | sensor `TEMPERATURA` → `ultimoValor` | — |
-| `tempMin`, `tempMax` | `mediciones` por hora → mínimo de los `min` y máximo de los `max` | Si no hay serie → `null` |
-| `airHumidity` | sensor `HUMEDAD_AIRE` → `ultimoValor` | — |
-| `dpv` | **Se calcula**: `0.6108 · e^(17.27·T / (T + 237.3)) · (1 − HR/100)` (kPa) | Necesita temperatura y humedad del aire; si falta una → `null` |
-| `solarExposure` | sensor `LUZ` → `ultimoValor` | Es **%** (0 = oscuridad, 100 = luz directa), no lux: cambiar la etiqueta del widget |
-| `waterCycles` | riegos `EJECUTADO` con `creadoEn` en las últimas 24 h | — |
-| `waterDispensed` | — | **Próximamente** (la API no mide litros) |
-| `waterReservoir`, `reservoirPercent` | — | **Próximamente** (no hay sensor de depósito) |
-| `status` | alertas activas | Alguna `CRITICA` o `ADVERTENCIA` → `'Deficit'`; solo `INFO` → `'Stable'`; ninguna → `'Optimal'` |
+| Campo de `PotData`                   | Fuente                                                                    | Notas                                                                                           |
+|--------------------------------------|---------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `id`, `number`                       | `'01'` fijo                                                               | —                                                                                               |
+| `name`                               | `dispositivo.nombre`                                                      | "Maceta 01"                                                                                     |
+| `zone`                               | `dispositivo.ubicacion`                                                   | "Laboratorio"; `null` → "Próximamente"                                                          |
+| `crop`, `sector`                     | —                                                                         | **Próximamente**                                                                                |
+| `battery`                            | —                                                                         | **Próximamente**                                                                                |
+| `soilMoisture`                       | sensor `HUMEDAD_SUELO` → `ultimoValor`                                    | Ver "Sensores"                                                                                  |
+| `vwcRange`                           | `dispositivo.umbralRiego`                                                 | Texto `Riego bajo ${umbralRiego}%`                                                              |
+| `airTemp`                            | sensor `TEMPERATURA` → `ultimoValor`                                      | —                                                                                               |
+| `tempMin`, `tempMax`                 | `mediciones` por hora → mínimo de los `min` y máximo de los `max`         | Si no hay serie → `null`                                                                        |
+| `airHumidity`                        | sensor `HUMEDAD_AIRE` → `ultimoValor`                                     | —                                                                                               |
+| `dpv`                                | **Se calcula**: `0.6108 · e^(17.27·T / (T + 237.3)) · (1 − HR/100)` (kPa) | Necesita temperatura y humedad del aire; si falta una → `null`                                  |
+| `solarExposure`                      | sensor `LUZ` → `ultimoValor`                                              | Es **%** (0 = oscuridad, 100 = luz directa), no lux: cambiar la etiqueta del widget             |
+| `waterCycles`                        | riegos `EJECUTADO` con `creadoEn` en las últimas 24 h                     | —                                                                                               |
+| `waterDispensed`                     | —                                                                         | **Próximamente** (la API no mide litros)                                                        |
+| `waterReservoir`, `reservoirPercent` | —                                                                         | **Próximamente** (no hay sensor de depósito)                                                    |
+| `status`                             | alertas activas                                                           | Alguna `CRITICA` o `ADVERTENCIA` → `'Deficit'`; solo `INFO` → `'Stable'`; ninguna → `'Optimal'` |
 
 Además del `PotData`, el hook expone `conectado` (`dispositivo.conectado`), `tieneBomba` y `duracionRiegoSeg`.
 
 ### 3. Componentes: cambios uno por uno
 
-| Componente | Cambio |
-| --- | --- |
-| `App.tsx` | Quitar `POTS_DATA` y `handleAddPot`. Usar `useMaceta()`. `potsList = pot ? [pot] : []`. Mientras `cargando`, mostrar un estado de carga. |
-| `HeaderOverview` | Mostrar "Conectado" o "Desconectado" (`dispositivo.conectado`) y "Actualizado hace X s". El botón "Dosis Manual 100ml" pasa a ser **"Regar ahora (5 s)"**, con la duración tomada de `duracionRiegoSeg`. `battery` → "Próximamente". |
-| `MetricsWidgets` | Ver "Sensores". El widget de luz pasa de "42.5k" a "Luz 63 %". `dpv` y `tempMin`/`tempMax` en `null` → "—". |
-| `IrrigationStatus` | Estado real del último riego (ver "Riego"). "Ciclos (24 h)" real. Litros y depósito → "Próximamente". |
-| `PotsSummary` | Una sola fila (`maceta-01`), con su `status` real. |
-| `Topbar` | El selector muestra solo `maceta-01`. El botón "Agregar maceta" queda **deshabilitado** con la etiqueta "Próximamente" y no abre el modal. |
-| `AddPotModal` | No se borra; solo deja de ser accesible. |
-| `data/potsData.ts` | Ya no lo importa nadie. Se conserva solo la interfaz `PotData` (o se mueve a `types/`). |
-| `Login` | Sin cambios (no hay autenticación en el MVP). |
+| Componente         | Cambio                                                                                                                                                                                                                               |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `App.tsx`          | Usar `useMaceta()` para `maceta-01` y sustituir solo sus datos mock cuando la API responde. Conservar `POTS_DATA` y `handleAddPot` para las macetas ficticias. Mostrar carga o error si la maceta 01 aún no tiene datos.                  |
+| `HeaderOverview`   | Mostrar "Conectado" o "Desconectado" (`dispositivo.conectado`) y "Actualizado hace X s". El botón "Dosis Manual 100ml" pasa a ser **"Regar ahora (5 s)"**, con la duración tomada de `duracionRiegoSeg`. `battery` → "Próximamente". |
+| `MetricsWidgets`   | Ver "Sensores". El widget de luz pasa de "42.5k" a "Luz 63 %". `dpv` y `tempMin`/`tempMax` en `null` → "—".                                                                                                                          |
+| `IrrigationStatus` | Estado real del último riego (ver "Riego"). "Ciclos (24 h)" real. Litros y depósito → "Próximamente".                                                                                                                                |
+| `PotsSummary`      | Mantener las macetas ficticias; la fila de `maceta-01` muestra su `status` real cuando llegan datos de la API.                                                                                                                      |
+| `Topbar`           | Mantener el selector y el modal para macetas ficticias. Solo la selección `01` muestra datos reales y usa endpoints de la API.                                                                                                      |
+| `AddPotModal`      | Se conserva accesible; las macetas que agrega siguen siendo ficticias y no llaman a la API.                                                                                                                                         |
+| `data/potsData.ts` | Se conserva para las macetas ficticias y la interfaz compartida `PotData`.                                                                                                                                                          |
+| `Login`            | Sin cambios (no hay autenticación en el MVP).                                                                                                                                                                                        |
 
 Para "Próximamente" usar **un solo componente** (`<Proximamente />`: texto gris pequeño), y no textos sueltos repetidos.
 
@@ -135,14 +135,14 @@ Las fechas se muestran en **hora de Guatemala**: `new Intl.DateTimeFormat('es-GT
 
 El estado del riego se toma del riego **más reciente**: el primer elemento de `api.riegos(...)`, que viene ordenado del más reciente al más antiguo.
 
-| `estado` del último riego | Texto en `IrrigationStatus` | Botón "Regar ahora" |
-| --- | --- | --- |
-| `PENDIENTE` | "En cola: esperando a la maceta" | Deshabilitado, "Regando…" |
-| `ENVIADO` | "Regando…" (animación actual) | Deshabilitado |
-| `EJECUTADO` | "Último riego: hh:mm ✓" | Habilitado |
-| `FALLIDO` | "Último riego falló" (rojo) | Habilitado |
-| `EXPIRADO` | "La maceta no confirmó el riego" (gris) | Habilitado |
-| (sin riegos) | "Sin riegos todavía" | Habilitado |
+| `estado` del último riego | Texto en `IrrigationStatus`             | Botón "Regar ahora"       |
+|---------------------------|-----------------------------------------|---------------------------|
+| `PENDIENTE`               | "En cola: esperando a la maceta"        | Deshabilitado, "Regando…" |
+| `ENVIADO`                 | "Regando…" (animación actual)           | Deshabilitado             |
+| `EJECUTADO`               | "Último riego: hh:mm ✓"                 | Habilitado                |
+| `FALLIDO`                 | "Último riego falló" (rojo)             | Habilitado                |
+| `EXPIRADO`                | "La maceta no confirmó el riego" (gris) | Habilitado                |
+| (sin riegos)              | "Sin riegos todavía"                    | Habilitado                |
 
 - El botón queda **deshabilitado si `tieneBomba` es `false`**, con el texto "Sin bomba".
 - Si `POST /riegos` responde 409, se muestra `error.message` de `ApiError` (viene en español desde la API). Códigos: `RIEGO_EN_CURSO` y `BOMBA_NO_DISPONIBLE`.
@@ -154,7 +154,7 @@ El estado del riego se toma del riego **más reciente**: el primer elemento de `
 - Formulario de configuración (`PATCH`).
 - Pantalla de alertas con "Resolver".
 - Las pestañas Dispositivos, Analíticas y Configuración.
-- Varias macetas.
+- Varias macetas conectadas a la API.
 - Firebase.
 
 No hace falta tocarlas ahora.

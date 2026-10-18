@@ -1,11 +1,84 @@
 import React from 'react';
 import type { PotData } from '../../data/potsData';
+import type { SensorDetectado } from '../../types/contrato';
 
 interface MetricsWidgetsProps {
   pot: PotData;
+  sensores?: SensorDetectado[];
 }
 
-export const MetricsWidgets: React.FC<MetricsWidgetsProps> = ({ pot }) => {
+function LiveMetrics({ pot, sensores }: MetricsWidgetsProps & { sensores: SensorDetectado[] }) {
+  const fechaGuatemala = new Intl.DateTimeFormat('es-GT', {
+    timeZone: 'America/Guatemala',
+    timeStyle: 'short',
+  });
+
+  return (
+    <div
+      className="d-grid gap-3"
+      style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))' }}
+    >
+      {sensores.map((sensor) => {
+        const sinDatos = sensor.estado === 'SIN_DATOS';
+        const valor = sensor.tipo === 'HUMEDAD_SUELO' ? pot.soilMoisture
+          : sensor.tipo === 'TEMPERATURA' ? pot.airTemp
+            : sensor.tipo === 'HUMEDAD_AIRE' ? pot.airHumidity
+              : sensor.tipo === 'LUZ' ? pot.solarExposure
+                : sensor.ultimoValor;
+        const unidad = sensor.tipo === 'LUZ' ? '%' : sensor.unidad;
+        const color = sinDatos ? '#64748B'
+          : sensor.tipo === 'LUZ' ? '#F59E0B'
+            : sensor.tipo === 'TEMPERATURA' || sensor.tipo === 'HUMEDAD_AIRE' ? '#38BDF8' : '#10B981';
+        const ultimaLectura = new Date(sensor.ultimaLectura);
+
+        return (
+          <div key={sensor.tipo} className="p-4 rounded-4 border border-secondary border-opacity-10 h-100 d-flex flex-column justify-content-between" style={{ backgroundColor: '#131B2E', color }}>
+            <div>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <span className="fw-semibold text-white" style={{ fontSize: '14px' }}>{sensor.nombre}</span>
+                <span className="badge rounded-pill fw-semibold" style={{ fontSize: '10px', backgroundColor: sinDatos ? '#334155' : `${color}20`, color, padding: '4px 8px' }}>
+                  {sinDatos ? 'Sin datos' : 'Activo'}
+                </span>
+              </div>
+              <div className="d-flex align-items-baseline">
+                <span className="fw-bold text-white" style={{ fontSize: '38px' }}>
+                  {valor === null ? '—' : Number(valor).toFixed(1)}
+                </span>
+                {valor !== null && <span className="fs-6 ms-2 text-white">{unidad}</span>}
+              </div>
+              {sensor.tipo === 'HUMEDAD_SUELO' && (
+                <div className="mt-2" style={{ fontSize: '11px', color: '#94A3B8' }}>
+                  Umbral de riego: {pot.vwcRange ?? '—'}
+                </div>
+              )}
+              {sensor.tipo === 'TEMPERATURA' && (
+                <div className="mt-2 d-flex gap-2" style={{ fontSize: '11px', color: '#94A3B8' }}>
+                  <span>Mín {pot.tempMin === null ? '—' : `${pot.tempMin}°C`}</span>
+                  <span>•</span>
+                  <span>Máx {pot.tempMax === null ? '—' : `${pot.tempMax}°C`}</span>
+                </div>
+              )}
+              {sensor.tipo === 'HUMEDAD_AIRE' && (
+                <div className="mt-2" style={{ fontSize: '11px', color: '#94A3B8' }}>
+                  DPV: {pot.dpv === null ? '—' : `${pot.dpv} kPa`}
+                </div>
+              )}
+              {sinDatos && (
+                <div className="mt-2" style={{ fontSize: '11px', color: '#94A3B8' }}>
+                  Última lectura: {Number.isNaN(ultimaLectura.getTime()) ? '—' : fechaGuatemala.format(ultimaLectura)}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export const MetricsWidgets: React.FC<MetricsWidgetsProps> = ({ pot, sensores }) => {
+  if (sensores) return <LiveMetrics pot={pot} sensores={sensores} />;
+
   return (
     <div className="row g-3">
       {/* WIDGET 1: Humedad Suelo */}
@@ -25,8 +98,8 @@ export const MetricsWidgets: React.FC<MetricsWidgetsProps> = ({ pot }) => {
             <div className="d-flex align-items-center justify-content-between my-2">
               <div>
                 <div className="d-flex align-items-baseline">
-                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.soilMoisture}</h1>
-                  <span className="fs-5 text-white ms-0.5">%</span>
+                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.soilMoisture ?? '—'}</h1>
+                  {pot.soilMoisture !== null && <span className="fs-5 text-white ms-0.5">%</span>}
                 </div>
                 <div className="d-flex align-items-center gap-1 mt-1" style={{ color: '#10B981', fontSize: '11px' }}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
@@ -37,7 +110,7 @@ export const MetricsWidgets: React.FC<MetricsWidgetsProps> = ({ pot }) => {
               <div className="position-relative d-flex align-items-center justify-content-center" style={{ width: '70px', height: '70px' }}>
                 <svg width="70" height="70" viewBox="0 0 36 36">
                   <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1E293B" strokeWidth="3.5" />
-                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10B981" strokeWidth="3.5" strokeDasharray={`${pot.soilMoisture}, 100`} strokeLinecap="round" />
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#10B981" strokeWidth="3.5" strokeDasharray={`${pot.soilMoisture ?? 0}, 100`} strokeLinecap="round" />
                 </svg>
                 <span className="position-absolute fw-bold text-white" style={{ fontSize: '10px', letterSpacing: '0.5px' }}>VWC</span>
               </div>
@@ -68,13 +141,13 @@ export const MetricsWidgets: React.FC<MetricsWidgetsProps> = ({ pot }) => {
             <div className="d-flex align-items-center justify-content-between my-2">
               <div>
                 <div className="d-flex align-items-baseline">
-                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.airTemp}</h1>
-                  <span className="fs-5 text-white ms-0.5">°C</span>
+                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.airTemp ?? '—'}</h1>
+                  {pot.airTemp !== null && <span className="fs-5 text-white ms-0.5">°C</span>}
                 </div>
                 <div className="d-flex align-items-center gap-2 mt-1" style={{ fontSize: '11px' }}>
-                  <span style={{ color: '#38BDF8' }}>Mín {pot.tempMin}°C</span>
+                  <span style={{ color: '#38BDF8' }}>Mín {pot.tempMin === null ? '—' : `${pot.tempMin}°C`}</span>
                   <span style={{ color: '#64748B' }}>•</span>
-                  <span style={{ color: '#F43F5E' }}>Máx {pot.tempMax}°C</span>
+                  <span style={{ color: '#F43F5E' }}>Máx {pot.tempMax === null ? '—' : `${pot.tempMax}°C`}</span>
                 </div>
               </div>
 
@@ -111,11 +184,11 @@ export const MetricsWidgets: React.FC<MetricsWidgetsProps> = ({ pot }) => {
             <div className="d-flex align-items-center justify-content-between my-2">
               <div>
                 <div className="d-flex align-items-baseline">
-                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.airHumidity}</h1>
-                  <span className="fs-6 text-white ms-1 fw-medium">% RH</span>
+                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.airHumidity ?? '—'}</h1>
+                  {pot.airHumidity !== null && <span className="fs-6 text-white ms-1 fw-medium">% RH</span>}
                 </div>
                 <div className="mt-1" style={{ fontSize: '11px', color: '#94A3B8' }}>
-                  <span className="text-white fw-semibold">DPV {pot.dpv} kPa</span> <span style={{ color: '#64748B' }}>(Obj 0.8 - 1.1)</span>
+                  <span className="text-white fw-semibold">DPV {pot.dpv === null ? '—' : `${pot.dpv} kPa`}</span> <span style={{ color: '#64748B' }}>(Obj 0.8 - 1.1)</span>
                 </div>
               </div>
 
@@ -152,7 +225,7 @@ export const MetricsWidgets: React.FC<MetricsWidgetsProps> = ({ pot }) => {
             <div className="d-flex align-items-center justify-content-between my-2">
               <div>
                 <div className="d-flex align-items-baseline">
-                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.solarExposure}</h1>
+                  <h1 className="fw-bold text-white mb-0" style={{ fontSize: '38px' }}>{pot.solarExposure ?? '—'}</h1>
                   <span className="fs-6 ms-1 fw-medium" style={{ color: '#F59E0B' }}>Lux</span>
                 </div>
                 <div className="d-flex align-items-center gap-1 mt-1" style={{ color: '#10B981', fontSize: '11px' }}>

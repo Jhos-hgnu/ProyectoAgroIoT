@@ -2,23 +2,24 @@ export interface PotData {
   id: string;
   number: string;
   name: string;
-  crop: string;
-  zone: string;
-  sector: string;
-  battery: string;
-  soilMoisture: number;
-  vwcRange: string;
-  airTemp: number;
-  tempMin: number;
-  tempMax: number;
-  airHumidity: number;
-  dpv: number;
-  solarExposure: string;
-  waterDispensed: string;
-  waterCycles: number;
-  waterReservoir: string;
-  reservoirPercent: number;
+  crop: string | null;
+  zone: string | null;
+  sector: string | null;
+  battery: string | null;
+  soilMoisture: number | null;
+  vwcRange: string | null;
+  airTemp: number | null;
+  tempMin: number | null;
+  tempMax: number | null;
+  airHumidity: number | null;
+  dpv: number | null;
+  solarExposure: string | number | null;
+  waterDispensed: string | null;
+  waterCycles: number | null;
+  waterReservoir: string | null;
+  reservoirPercent: number | null;
   status: 'Optimal' | 'Stable' | 'Deficit';
+  isLoading?: boolean;
 }
 
 export const POTS_DATA: Record<string, PotData> = {

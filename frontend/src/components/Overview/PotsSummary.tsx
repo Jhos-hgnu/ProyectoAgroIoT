@@ -1,5 +1,6 @@
 import React from 'react';
 import type { PotData } from '../../data/potsData';
+import { Proximamente } from '../Proximamente';
 
 interface PotsSummaryProps {
   potsList: PotData[];
@@ -64,7 +65,8 @@ export const PotsSummary: React.FC<PotsSummaryProps> = ({
         >
           {potsList.map((pot) => {
             const isSelected = selectedPotId === pot.id;
-            const statusColor = statusColors[pot.status];
+            const statusColor = pot.isLoading ? '#64748B' : statusColors[pot.status];
+            const statusLabel = pot.isLoading ? 'Conectando…' : statusLabels[pot.status];
 
             return (
               <button
@@ -99,14 +101,20 @@ export const PotsSummary: React.FC<PotsSummaryProps> = ({
                       {pot.name}
                     </div>
                     <small style={{ fontSize: '11px', color: isSelected ? '#10B981' : statusColor }}>
-                      {isSelected ? 'Nodo seleccionado · ' : `${pot.zone} · `}{statusLabels[pot.status]}
+                      {isSelected ? 'Nodo seleccionado · ' : (
+                        <>
+                          {pot.zone ?? (pot.id === '01' && !pot.isLoading ? <Proximamente /> : 'Ubicación pendiente')}
+                          {' · '}
+                        </>
+                      )}
+                      {statusLabel}
                     </small>
                   </div>
                 </div>
 
                 <div className="text-end ms-2">
                   <div className="fw-bold" style={{ fontSize: '18px', color: statusColor, lineHeight: '1' }}>
-                    {pot.soilMoisture}%
+                    {pot.soilMoisture === null ? '—' : `${pot.soilMoisture}%`}
                   </div>
                   <small style={{ fontSize: '10px', color: '#94A3B8' }}>Humedad</small>
                 </div>
