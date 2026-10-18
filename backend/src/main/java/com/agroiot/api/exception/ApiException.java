@@ -49,6 +49,18 @@ public class ApiException extends RuntimeException {
 		return new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "SIN_MEDICIONES_VALIDAS", mensaje);
 	}
 
+	public static ApiException reporteNoEncontrado(Long id) {
+		return new ApiException(HttpStatus.NOT_FOUND, "REPORTE_NO_ENCONTRADO", "No existe el reporte " + id);
+	}
+
+	public static ApiException datosInsuficientes(String mensaje) {
+		return new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "DATOS_INSUFICIENTES", mensaje);
+	}
+
+	public static ApiException iaNoDisponible(String mensaje) {
+		return new ApiException(HttpStatus.BAD_GATEWAY, "IA_NO_DISPONIBLE", mensaje);
+	}
+
 	public static ApiException noImplementado(String ruta) {
 		return new ApiException(HttpStatus.NOT_IMPLEMENTED, "NO_IMPLEMENTADO", "Endpoint aún no implementado: " + ruta);
 	}
