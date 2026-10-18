@@ -57,7 +57,7 @@ Todos los errores tienen la misma forma:
 | 404 | El dispositivo, comando, alerta o reporte no existe (`DISPOSITIVO_NO_ENCONTRADO`, `COMANDO_NO_ENCONTRADO`, `ALERTA_NO_ENCONTRADA`, `REPORTE_NO_ENCONTRADO`) |
 | 409 | El estado no lo permite (`RIEGO_EN_CURSO`, `BOMBA_NO_DISPONIBLE`, `COMANDO_NO_ENVIADO`) |
 | 422 | Petición válida pero sin datos suficientes (`SIN_MEDICIONES_VALIDAS`, `DATOS_INSUFICIENTES`) |
-| 501 | Endpoint definido pero aún no implementado (`NO_IMPLEMENTADO`) |
+| 501 | Endpoint definido pero aún no implementado (`NO_IMPLEMENTADO`). Desde la fase 7 todos están implementados y ninguno lo responde |
 | 502 | Falló el servicio de IA (`IA_NO_DISPONIBLE`) |
 
 ## PostgreSQL: el historial
@@ -149,6 +149,14 @@ Firebase guarda solo el último estado de cada dispositivo: la API lo sobrescrib
 | `alertasActivas/<id>` | Se abre una alerta (se agrega) o se resuelve (se borra) |
 | `nombre`, `tieneBomba`, `riegoAutomatico`, `umbralRiego` | Arranca la API o cambia la configuración del dispositivo |
 
+Detalles:
+
+- **Al arrancar, la API reescribe el nodo completo** de cada dispositivo desde PostgreSQL, así que Firebase se recupera solo si estuvo caído.
+- **`riego` es siempre el último comando**, también cuando termina en `EXPIRADO`. La API expira los comandos al recibir una lectura, una confirmación o un riego nuevo; si el ESP32 se desconecta con un comando `ENVIADO`, el nodo se queda así hasta la siguiente petición. Por eso el frontend debe mostrar "Regando" solo si además el dispositivo está conectado.
+- **Las alertas del sistema** (por ejemplo, riego fallido) no tienen `tipoSensor` ni `valor`: esos campos no aparecen.
+- La API escribe después de guardar en PostgreSQL. Si Firebase falla, la petición responde igual y el error queda en el log.
+- `/salud` escribe `salud/revisadaEn` para comprobar la conexión; el frontend no lo usa.
+
 Lo que calcula el frontend, sin que nadie lo guarde:
 
 - **Conectado:** `ahora − ultimaConexion` < 60 s.
@@ -156,7 +164,7 @@ Lo que calcula el frontend, sin que nadie lo guarde:
 - **Tarjetas:** una por cada clave dentro de `sensores` (`Object.entries`), nunca cuatro fijas.
 - **Regando:** `riego.estado` es `PENDIENTE` o `ENVIADO`.
 
-Reglas de seguridad de Firebase:
+Reglas de seguridad de Firebase (`firebase/database.rules.json`):
 
 ```json
 {
@@ -167,7 +175,7 @@ Reglas de seguridad de Firebase:
 }
 ```
 
-La API escribe con el Admin SDK (`com.google.firebase:firebase-admin`) usando la llave de *service account* desde una variable de entorno (`FIREBASE_CREDENTIALS`, el JSON completo) y la URL de la base en `FIREBASE_DB_URL`.
+La API escribe con el Admin SDK (`com.google.firebase:firebase-admin`) usando la llave de *service account* desde una variable de entorno (`FIREBASE_CREDENTIALS`, el JSON completo o la ruta al archivo) y la URL de la base en `FIREBASE_DB_URL`. Con el emulador local basta la URL; ver [`firebase/README.md`](../firebase/README.md).
 
 ## Contrato de la API
 
@@ -242,6 +250,10 @@ X-Api-Key: <clave>
 - 409 `COMANDO_NO_ENVIADO` si el comando no está en `ENVIADO`. Incluye la confirmación que llega más de 2 min después de crearse el comando: el comando queda `EXPIRADO`.
 - 404 `COMANDO_NO_ENCONTRADO` si el comando no existe o es de otro `dispositivoId`.
 - 400 `VALIDACION` si `estado` no es `EJECUTADO` ni `FALLIDO`.
+
+### GET /dispositivos/{id}/comandos/pendiente (opcional)
+
+Para que el ESP32 consulte el riego sin enviar una lectura (`X-Api-Key`). Hace lo mismo que el paso 6 de `POST /lecturas`: expira los comandos viejos y, si hay uno `PENDIENTE`, lo marca `ENVIADO` y responde 200 con `{ "id": 88, "accion": "REGAR", "duracionSeg": 5 }`. Desde ahí corren los 2 min para confirmarlo. Si no hay comando, 204 sin cuerpo; 404 `DISPOSITIVO_NO_ENCONTRADO` si el dispositivo no existe. No cuenta como lectura: no cambia `ultimaConexion`.
 
 ### GET /dispositivos/{id}
 
@@ -345,7 +357,7 @@ Cuerpo `{ "horas": 24 }` (1–72, por defecto 24). Responde 201:
 }
 ```
 
-Errores: 422 `DATOS_INSUFICIENTES` (menos de 10 mediciones en la ventana), 502 `IA_NO_DISPONIBLE` (no se guarda nada). `GET /dispositivos/{id}/reportes` devuelve la lista sin `contenido`; `GET /reportes/{id}` el reporte completo.
+Errores: 422 `DATOS_INSUFICIENTES` (menos de 10 mediciones en la ventana), 502 `IA_NO_DISPONIBLE` (falla el modelo, responde vacío o falta `GEMINI_API_KEY`; no se guarda nada). La respuesta tarda unos segundos: el frontend debe mostrar que está generando y desactivar el botón. `GET /dispositivos/{id}/reportes` devuelve la lista sin `contenido`, del más reciente al más antiguo (`?limite=20`, de 1 a 100); `GET /reportes/{id}` el reporte completo, o 404 `REPORTE_NO_ENCONTRADO`.
 
 ### GET /salud
 
@@ -399,6 +411,23 @@ Calculados al consultar: sensor `ACTIVO` si `ultima_lectura` < 2 min, si no `SIN
 3. Armar un JSON con dispositivo, ventana en hora de Guatemala, sensores con y sin datos, totales y resumen por hora, riegos por origen y estado, y alertas de la ventana.
 4. Enviarlo con el prompt (Spring AI + Gemini). Guardar el JSON en `resumen_entrada` y la respuesta en `contenido`.
 
+Forma del JSON (fechas como `2026-10-16 10:00`, en hora de Guatemala):
+
+```json
+{
+  "dispositivo": { "id": "maceta-01", "nombre": "Maceta 01", "ubicacion": "Laboratorio", "tieneBomba": true, "riegoAutomatico": true, "umbralRiegoSuelo": 35.00 },
+  "ventana": { "desde": "2026-10-15 10:20", "hasta": "2026-10-16 10:20", "horas": 24 },
+  "sensoresConDatos": ["HUMEDAD_SUELO", "TEMPERATURA"],
+  "sensoresSinDatos": ["HUMEDAD_AIRE", "LUZ"],
+  "totales": [{ "sensor": "TEMPERATURA", "unidad": "°C", "promedio": 24.10, "minimo": 19.80, "maximo": 31.20, "muestras": 8640 }],
+  "resumenPorHora": { "TEMPERATURA": [{ "hora": "2026-10-15 10:00", "promedio": 23.90, "minimo": 23.50, "maximo": 24.30, "muestras": 240 }] },
+  "riegos": [{ "origen": "AUTOMATICO", "estado": "EJECUTADO", "total": 3 }],
+  "alertas": [{ "sensor": "TEMPERATURA", "severidad": "ADVERTENCIA", "mensaje": "Temperatura alta", "valor": 33.10, "creada": "2026-10-15 14:02", "resuelta": "2026-10-15 15:10" }]
+}
+```
+
+La API llama al modelo fuera de una transacción, para no ocupar una conexión de la base mientras espera. Configuración: `GEMINI_API_KEY` (Google AI Studio) y `GEMINI_MODEL` (por defecto `gemini-2.5-flash`), con 60 s de tiempo máximo y un reintento.
+
 ```text
 Eres un agrónomo que revisa una maceta monitoreada con sensores.
 Analiza SOLO los datos del JSON. Las horas están en hora de Guatemala.
@@ -416,13 +445,15 @@ Datos:
 
 ## Pruebas de los modos con sensores parciales
 
-- [ ] Solo `HUMEDAD_SUELO`: con el valor bajo 35 % se crea un riego automático que llega en la respuesta de esa misma lectura.
-- [ ] Solo `TEMPERATURA` y `HUMEDAD_AIRE`: el dashboard muestra 2 tarjetas; el riego manual funciona y el automático no.
-- [ ] Un sensor deja de enviar: a los 2 min aparece "Sin datos" y su gráfica conserva el historial.
-- [ ] `HUMEDAD_SUELO` con valor 150: solo esa medición se descarta y la lectura responde 201.
-- [ ] Todas las mediciones inválidas: 422.
-- [ ] `tieneBomba` en falso: botón deshabilitado y `POST /riegos` responde 409.
-- [ ] Simulador sin confirmar: el comando pasa a `EXPIRADO` a los 2 min.
-- [ ] Historial de 24 h cargado con `medidaEn`: no se crean riegos ni alertas.
-- [ ] Reporte de IA con 1 sensor y con 4.
+La parte de la API está automatizada en `SensoresParcialesTest`, `RiegoTest` y `ReporteTest`. Lo que queda sin marcar depende del dashboard, de una key real de Gemini o del despliegue en Render.
+
+- [x] Solo `HUMEDAD_SUELO`: con el valor bajo 35 % se crea un riego automático que llega en la respuesta de esa misma lectura.
+- [ ] Solo `TEMPERATURA` y `HUMEDAD_AIRE`: el dashboard muestra 2 tarjetas; el riego manual funciona y el automático no. (API probada: 2 sensores y `riegoAutomaticoDisponible: false`; falta el dashboard.)
+- [ ] Un sensor deja de enviar: a los 2 min aparece "Sin datos" y su gráfica conserva el historial. (API probada: `SIN_DATOS` y la serie se conserva; falta el dashboard.)
+- [x] `HUMEDAD_SUELO` con valor 150: solo esa medición se descarta y la lectura responde 201.
+- [x] Todas las mediciones inválidas: 422.
+- [ ] `tieneBomba` en falso: botón deshabilitado y `POST /riegos` responde 409. (API probada: 409 `BOMBA_NO_DISPONIBLE`; falta el dashboard.)
+- [x] Simulador sin confirmar: el comando pasa a `EXPIRADO` a los 2 min.
+- [x] Historial de 24 h cargado con `medidaEn`: no se crean riegos ni alertas.
+- [ ] Reporte de IA con 1 sensor y con 4. (Probado con un modelo simulado; falta con `GEMINI_API_KEY`.)
 - [ ] `GET /salud` responde después de que Render se durmió.

@@ -38,11 +38,13 @@ Cada prueba corre en una transacción que se revierte, así que no deja datos en
 | `POST` y `GET /dispositivos/{id}/riegos` | `GET /reportes/{id}` (fase 6) |
 | `GET /dispositivos/{id}/alertas`, `POST /alertas/{id}/resolver` | `GET /dispositivos/{id}/comandos/pendiente` (opcional) |
 
+Después de esta validación, la fase 6 implementó los tres endpoints de reportes.
+
 ## Detalles conocidos (aceptables para un MVP)
 
 1. **El dashboard todavía usa datos fijos** (`potsData`) y no llama a la API. La demo es de la API. Las instrucciones para conectarlo, con una estimación de 1 día, están en [`frontend-mvp.md`](frontend-mvp.md).
-2. **Firebase no está integrado** (fase 5), así que `/salud` responde `firebase: NO_CONFIGURADO`. El dashboard tendría que consultar la API cada pocos segundos para ver datos en vivo.
-3. **Memoria:** la API usa unos 445 MB sin límite de memoria configurado, y el plan gratuito de Render tiene 512 MB. Hay que vigilarlo al desplegar (fase 7).
+2. **Firebase no estaba integrado** en esta validación. Ya está (fase 5, probada con el emulador); sin `FIREBASE_DB_URL`, `/salud` sigue respondiendo `firebase: NO_CONFIGURADO` y el dashboard puede consultar la API cada pocos segundos.
+3. **Memoria:** la API usa unos 445 MB sin límite de memoria configurado, y el plan gratuito de Render tiene 512 MB. Hay que vigilarlo al desplegar (fase 7). Ya resuelto en la fase 7: con la imagen ajustada usa unos 206 MB bajo carga (ver [`despliegue.md`](despliegue.md)).
 4. **Para repetir el riego automático en la demo** hay que bajar `esperaRiegoMin` a 0, porque por diseño la API espera 10 min entre riegos.
 5. **Una alerta resuelta a mano vuelve a abrirse** en la siguiente lectura si la condición sigue cumpliéndose. Así lo define el contrato.
 6. **Las pruebas necesitan la base local** (Docker y `backend/.env`); aún no hay integración continua.

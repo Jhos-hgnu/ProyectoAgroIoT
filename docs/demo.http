@@ -176,6 +176,10 @@ Content-Type: application/json
 
 { "dispositivoId": "{{dispositivo}}", "estado": "EJECUTADO", "detalle": null }
 
+### Consultar el riego sin enviar lectura (opcional, ESP32) → 200 con el comando (queda ENVIADO) o 204
+GET {{api}}/dispositivos/{{dispositivo}}/comandos/pendiente
+X-Api-Key: {{apiKey}}
+
 ### =====================================================================
 ### Alertas (fase 4 · lista)
 ### =====================================================================
@@ -193,7 +197,7 @@ POST {{api}}/alertas/1/resolver
 ### Reportes de IA (fase 6)
 ### =====================================================================
 
-### Generar un reporte de las últimas 24 h → 201
+### Generar un reporte de las últimas 24 h → 201 (sin GEMINI_API_KEY → 502 IA_NO_DISPONIBLE)
 POST {{api}}/dispositivos/{{dispositivo}}/reportes
 Content-Type: application/json
 

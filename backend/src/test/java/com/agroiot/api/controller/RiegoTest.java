@@ -259,4 +259,52 @@ class RiegoTest {
 		mvc.perform(get("/api/dispositivos/maceta-99/riegos")).andExpect(status().isNotFound());
 	}
 
+
+	// --- Consultar el comando sin enviar lectura (opcional) ------------------
+
+	private ResultActions pendiente(String dispositivo) throws Exception {
+		return mvc.perform(get("/api/dispositivos/" + dispositivo + "/comandos/pendiente").header("X-Api-Key", apiKey));
+	}
+
+	@Test
+	void pendiente_loEntregaUnaVezYQuedaEnviado() throws Exception {
+		long comando = id(regar(null), "$.id");
+
+		pendiente("maceta-01")
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id").value(comando))
+				.andExpect(jsonPath("$.accion").value("REGAR"))
+				.andExpect(jsonPath("$.duracionSeg").value(5));
+		mvc.perform(get(DISPOSITIVO + "/riegos")).andExpect(jsonPath("$[0].estado").value("ENVIADO"));
+
+		// Ya entregado: ni la consulta ni la siguiente lectura lo vuelven a entregar.
+		pendiente("maceta-01").andExpect(status().isNoContent());
+		lectura("50", null).andExpect(jsonPath("$.comando").isEmpty());
+		confirmar(comando, "maceta-01", "EJECUTADO").andExpect(status().isOk());
+	}
+
+	@Test
+	void pendiente_sinComando_204() throws Exception {
+		pendiente("maceta-01").andExpect(status().isNoContent());
+	}
+
+	@Test
+	void pendiente_expiraLosViejos() throws Exception {
+		Long comando = jdbc.queryForObject("""
+				INSERT INTO comando_riego (dispositivo_id, origen, estado, duracion_seg, creado_en)
+				VALUES ('maceta-01', 'MANUAL', 'PENDIENTE', 5, now() - INTERVAL '3 minutes')
+				RETURNING id
+				""", Long.class);
+
+		pendiente("maceta-01").andExpect(status().isNoContent());
+		assertThat(estadoEnBase(comando)).isEqualTo("EXPIRADO");
+	}
+
+	@Test
+	void pendiente_errores() throws Exception {
+		pendiente("maceta-99").andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.codigo").value("DISPOSITIVO_NO_ENCONTRADO"));
+		mvc.perform(get(DISPOSITIVO + "/comandos/pendiente")).andExpect(status().isUnauthorized());
+	}
+
 }

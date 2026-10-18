@@ -3,6 +3,7 @@ package com.agroiot.api.service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.agroiot.api.dto.ComandoEntregado;
 import com.agroiot.api.dto.ConfirmacionRequest;
 import com.agroiot.api.dto.ConfirmacionResponse;
 import com.agroiot.api.dto.RiegoResponse;
@@ -42,13 +44,23 @@ public class RiegoService {
 	private final DispositivoSensorRepository dispositivoSensores;
 	private final ComandoRiegoRepository comandos;
 	private final AlertaService alertas;
+	private final EstadoVivoService estadoVivo;
 
 	public RiegoService(DispositivoRepository dispositivos, DispositivoSensorRepository dispositivoSensores,
-			ComandoRiegoRepository comandos, AlertaService alertas) {
+			ComandoRiegoRepository comandos, AlertaService alertas, EstadoVivoService estadoVivo) {
 		this.dispositivos = dispositivos;
 		this.dispositivoSensores = dispositivoSensores;
 		this.comandos = comandos;
 		this.alertas = alertas;
+		this.estadoVivo = estadoVivo;
+	}
+
+	/** Consulta 6: expira los comandos abiertos de más de 2 min y publica en Firebase el que expiró. */
+	@Transactional
+	public void expirarAbiertos(String dispositivoId) {
+		if (comandos.expirarAbiertos(dispositivoId) > 0) {
+			estadoVivo.publicarUltimoRiego(dispositivoId);
+		}
 	}
 
 	/** POST /dispositivos/{id}/riegos: riego manual. duracionSeg null = la configurada. */
@@ -59,7 +71,7 @@ public class RiegoService {
 		if (!d.isTieneBomba()) {
 			throw ApiException.bombaNoDisponible(dispositivoId);
 		}
-		comandos.expirarAbiertos(dispositivoId);
+		expirarAbiertos(dispositivoId);
 		if (comandos.existsByDispositivo_IdAndEstadoIn(dispositivoId, ABIERTOS)) {
 			throw ApiException.riegoEnCurso(dispositivoId);
 		}
@@ -76,7 +88,7 @@ public class RiegoService {
 		} catch (DataIntegrityViolationException e) {
 			throw ApiException.riegoEnCurso(dispositivoId);
 		}
-		// TODO (fase 5): publicar el nodo riego en Firebase.
+		estadoVivo.publicarRiego(c);
 		return aRespuesta(c);
 	}
 
@@ -91,7 +103,7 @@ public class RiegoService {
 				|| humedadSuelo.compareTo(d.getUmbralRiego()) >= 0) {
 			return;
 		}
-		comandos.expirarAbiertos(d.getId());
+		expirarAbiertos(d.getId());
 		if (!comandos.puedeRegarAutomaticamente(d.getId())) {
 			return;
 		}
@@ -99,7 +111,31 @@ public class RiegoService {
 				new ComandoRiego(d, OrigenComando.AUTOMATICO, d.getDuracionRiegoSeg(), humedadSuelo));
 		log.info("Riego automático #{} para {}: suelo {} % < umbral {} %", c.getId(), d.getId(), humedadSuelo,
 				d.getUmbralRiego());
-		// TODO (fase 5): publicar el nodo riego en Firebase.
+		estadoVivo.publicarRiego(c);
+	}
+
+	/**
+	 * Paso 6 de POST /lecturas y GET /dispositivos/{id}/comandos/pendiente: expira los comandos viejos y, si hay
+	 * uno PENDIENTE, lo marca ENVIADO y lo devuelve. Desde ahí corren los 2 min para que el ESP32 lo confirme.
+	 */
+	@Transactional
+	public Optional<ComandoEntregado> entregarPendiente(String dispositivoId, Instant ahora) {
+		expirarAbiertos(dispositivoId);
+		return comandos.findFirstByDispositivo_IdAndEstadoOrderByCreadoEnAsc(dispositivoId, EstadoComando.PENDIENTE)
+				.map(c -> {
+					c.marcarEnviado(ahora);
+					estadoVivo.publicarRiego(c);
+					return new ComandoEntregado(c.getId(), ComandoEntregado.REGAR, c.getDuracionSeg());
+				});
+	}
+
+	/** GET /dispositivos/{id}/comandos/pendiente: 404 si el dispositivo no existe. */
+	@Transactional
+	public Optional<ComandoEntregado> consultarPendiente(String dispositivoId) {
+		if (!dispositivos.existsById(dispositivoId)) {
+			throw ApiException.dispositivoNoEncontrado(dispositivoId);
+		}
+		return entregarPendiente(dispositivoId, Instant.now());
 	}
 
 	/** GET /dispositivos/{id}/riegos, del más reciente al más antiguo. */
@@ -125,7 +161,7 @@ public class RiegoService {
 
 		// Una confirmación que llega después de 2 min ya no cuenta: el comando expiró.
 		// expirarAbiertos limpia el contexto de JPA, así que el comando se vuelve a leer para poder modificarlo.
-		comandos.expirarAbiertos(req.dispositivoId());
+		expirarAbiertos(req.dispositivoId());
 		c = comandos.findById(comandoId).orElseThrow();
 		if (c.getEstado() != EstadoComando.ENVIADO) {
 			throw ApiException.comandoNoEnviado(comandoId, c.getEstado().name());
@@ -139,7 +175,7 @@ public class RiegoService {
 					"La bomba no se activó (riego #" + c.getId() + ")");
 			log.warn("Riego #{} FALLIDO: {}", c.getId(), req.detalle());
 		}
-		// TODO (fase 5): publicar el nodo riego en Firebase.
+		estadoVivo.publicarRiego(c);
 		return new ConfirmacionResponse(c.getId(), c.getEstado());
 	}
 

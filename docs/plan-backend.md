@@ -18,7 +18,7 @@ Todavía no tenemos el ESP32 ni los sensores, así que un **simulador** hace de 
 | Formato único de error (`ApiException` + `GlobalExceptionHandler`) | Hecho |
 | `X-Api-Key` en los endpoints del ESP32 (`ApiKeyFilter`) | Hecho |
 | CORS configurable con `CORS_ORIGINS` | Hecho |
-| `GET /salud` | Hecho (Firebase siempre `NO_CONFIGURADO`) |
+| `GET /salud` | Hecho (Firebase siempre `NO_CONFIGURADO` hasta la fase 5) |
 | `POST /lecturas` | Hecho, salvo el paso 5 (alertas, riego automático y Firebase) |
 | `GET /dispositivos/{id}` | Hecho |
 | Resto de endpoints | Responden 501 `NO_IMPLEMENTADO` |
@@ -109,28 +109,37 @@ Implementado en `AlertaService`, con 9 pruebas en `AlertaTest`. Se probó con `-
 
 ### Fase 5 — Firebase en vivo
 
-- [ ] Agregar `firebase-admin` y leer las credenciales de `FIREBASE_CREDENTIALS` y `FIREBASE_DB_URL`. Si no están configuradas, la API sigue funcionando y `/salud` dice `NO_CONFIGURADO`.
-- [ ] Escribir los nodos de la tabla "Firebase Realtime Database" del contrato: `ultimaConexion`, `sensores/<TIPO>`, `riego`, `alertasActivas/<id>` y la configuración.
-- [ ] Revisar Firebase en `/salud`.
+- [x] Agregar `firebase-admin` (sin Firestore ni Storage) y leer las credenciales de `FIREBASE_CREDENTIALS` y `FIREBASE_DB_URL` (`FirebaseCliente`). Si no están configuradas, la API sigue funcionando y `/salud` dice `NO_CONFIGURADO`.
+- [x] Escribir los nodos de la tabla "Firebase Realtime Database" del contrato: `ultimaConexion`, `sensores/<TIPO>`, `riego`, `alertasActivas/<id>` y la configuración (`EstadoVivoService`). Al arrancar, la API reescribe el nodo completo de cada dispositivo desde PostgreSQL.
+- [x] Revisar Firebase en `/salud`: escribe `salud/revisadaEn` y espera hasta 5 s la confirmación.
+- [x] Emulador local en `firebase/` (ver [`firebase/README.md`](../firebase/README.md)), para desarrollar sin la base real.
+- [x] Pruebas: `SaludTest` (sin Firebase) y `SaludFirebaseErrorTest` (Firebase sin credenciales: la API arranca y `/salud` dice `DEGRADADO`).
 
 **Terminada cuando:** con el simulador en vivo, la consola de Firebase cambia cada 10 s.
 
+Validado con el emulador: el nodo cambia con cada lectura; las alertas aparecen y desaparecen de `alertasActivas` al abrirse, cerrarse solas o resolverse; `riego` pasa por `PENDIENTE`, `ENVIADO` y `EJECUTADO`/`FALLIDO`/`EXPIRADO`; el `PATCH` actualiza la configuración, y una lectura rechazada (422) no cambia nada. Falta repetirlo con la base real cuando esté creada.
+
 ### Fase 6 — Reportes de IA
 
-- [ ] Agregar Spring AI con Gemini (`GEMINI_API_KEY`).
-- [ ] `POST /dispositivos/{id}/reportes`:
+- [x] Agregar Spring AI 2.0.1 con Gemini (`GEMINI_API_KEY` y `GEMINI_MODEL`, por defecto `gemini-2.5-flash`). Sin la key la API arranca igual y el reporte responde 502 (`GeminiConfig`).
+- [x] `POST /dispositivos/{id}/reportes` (`ReporteService` y `ReporteDatosRepository`):
   - Usa las consultas 1, 2 y 3 y el prompt del contrato.
   - Responde 422 `DATOS_INSUFICIENTES` con menos de 10 mediciones, y 502 `IA_NO_DISPONIBLE` si falla el modelo (en ese caso no se guarda nada).
-- [ ] `GET /dispositivos/{id}/reportes` y `GET /reportes/{id}`.
+- [x] `GET /dispositivos/{id}/reportes` (`?limite=20`) y `GET /reportes/{id}`.
+- [x] Pruebas: `ReporteTest` (11, con un modelo simulado: no gasta cuota) y `ReporteSinGeminiTest`.
 
 **Terminada cuando:** se generan reportes con 1 sensor y con 4 sensores, y el de 1 sensor menciona a los demás como no disponibles.
 
+Validado con el modelo simulado y con una key falsa (la petición llega a Gemini, que responde "API key not valid", y la API devuelve 502 en unos 3 s sin guardar nada). Falta generar los dos reportes reales cuando haya `GEMINI_API_KEY` y confirmar que `gemini-2.5-flash` sigue disponible.
+
 ### Fase 7 — Despliegue y calidad
 
-- [ ] Pruebas de integración con MockMvc y PostgreSQL para las reglas clave: descartes, 422, ciclo del comando, apertura y cierre de alertas.
-- [ ] Desplegar la API en Render (`backend/Dockerfile`) con la base en Neon, y configurar `CORS_ORIGINS` con la URL del frontend.
-- [ ] Repasar la lista "Pruebas de los modos con sensores parciales" del contrato.
-- [ ] `GET /dispositivos/{id}/comandos/pendiente` (opcional en el contrato).
+- [x] Pruebas de integración con MockMvc y PostgreSQL para las reglas clave: descartes, 422, ciclo del comando, apertura y cierre de alertas. Son 59; `SensoresParcialesTest` agrega los descartes y los modos parciales.
+- [x] Imagen Docker ajustada al plan gratuito de Render (512 MB, 0.1 CPU): arranque de 122 s a 44 s y unos 206 MB bajo carga.
+- [x] Guía de despliegue: [`despliegue.md`](despliegue.md).
+- [ ] Desplegar la API en Render (`backend/Dockerfile`) con la base en Neon, y configurar `CORS_ORIGINS` con la URL del frontend. Falta crear las cuentas.
+- [x] Repasar la lista "Pruebas de los modos con sensores parciales" del contrato: la parte de la API está cubierta; faltan las casillas del dashboard, de Gemini y de Render.
+- [x] `GET /dispositivos/{id}/comandos/pendiente` (opcional en el contrato).
 
 ## Guion sugerido para la demo (fases 1 a 4)
 

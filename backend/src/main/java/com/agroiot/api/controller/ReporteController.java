@@ -6,15 +6,21 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.agroiot.api.dto.ReporteResponse;
-import com.agroiot.api.exception.ApiException;
+import com.agroiot.api.service.ReporteService;
 
 @RestController
 @RequestMapping("/api/reportes")
 public class ReporteController {
 
+	private final ReporteService reportes;
+
+	public ReporteController(ReporteService reportes) {
+		this.reportes = reportes;
+	}
+
 	@GetMapping("/{id}")
 	public ReporteResponse obtener(@PathVariable Long id) {
-		throw ApiException.noImplementado("GET /reportes/{id}");
+		return reportes.obtener(id);
 	}
 
 }
