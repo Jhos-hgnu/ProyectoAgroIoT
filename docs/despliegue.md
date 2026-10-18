@@ -39,7 +39,7 @@ El plan gratuito de Neon suspende la base tras unos minutos sin uso; la primera 
 
    | Campo | Valor |
    | --- | --- |
-   | Branch | La rama que tenga el backend (hoy `backend/mvp-api`; lo normal es fusionarla antes a `main`) |
+   | Branch | `main` |
    | Root Directory | `backend` |
    | Runtime / Language | **Docker** (usa `backend/Dockerfile`) |
    | Region | La misma zona que Neon |
@@ -54,7 +54,7 @@ El plan gratuito de Neon suspende la base tras unos minutos sin uso; la primera 
    | `DEVICE_API_KEY` | Sí | Una clave nueva y larga, no la de tu `.env` local (por ejemplo, `openssl rand -hex 24`). La misma va en el ESP32 y en el simulador |
    | `CORS_ORIGINS` | Sí | La URL del frontend (paso 4). Mientras tanto, `http://localhost:5173` |
    | `GEMINI_API_KEY` | No | Key de Google AI Studio. Sin ella, los reportes responden 502 |
-   | `GEMINI_MODEL` | No | Solo si no quieres `gemini-2.5-flash` |
+   | `GEMINI_MODEL` | No | Solo si no quieres `gemini-3.8-flash` |
    | `FIREBASE_DB_URL` | No | `https://<proyecto>-default-rtdb.firebaseio.com` |
    | `FIREBASE_CREDENTIALS` | No | El **JSON completo** de la llave de service account, pegado tal cual. En Render sí funciona porque es una variable de entorno, no un archivo `.properties` |
 

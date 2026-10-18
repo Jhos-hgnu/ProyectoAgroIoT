@@ -123,7 +123,7 @@ class ReporteTest {
 				.andExpect(jsonPath("$.sensoresSinDatos[1]").value("HUMEDAD_SUELO"))
 				.andExpect(jsonPath("$.sensoresSinDatos[2]").value("LUZ"))
 				.andExpect(jsonPath("$.contenido").value(CONTENIDO))
-				.andExpect(jsonPath("$.modelo").value("gemini-2.5-flash"))
+				.andExpect(jsonPath("$.modelo").value("gemini-3.8-flash"))
 				.andExpect(jsonPath("$.creadoEn").isNotEmpty());
 
 		String prompt = promptEnviado();

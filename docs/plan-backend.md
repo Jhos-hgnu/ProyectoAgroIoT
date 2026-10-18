@@ -121,7 +121,7 @@ Validado con el emulador: el nodo cambia con cada lectura; las alertas aparecen 
 
 ### Fase 6 — Reportes de IA
 
-- [x] Agregar Spring AI 2.0.1 con Gemini (`GEMINI_API_KEY` y `GEMINI_MODEL`, por defecto `gemini-2.5-flash`). Sin la key la API arranca igual y el reporte responde 502 (`GeminiConfig`).
+- [x] Agregar Spring AI 2.0.1 con Gemini (`GEMINI_API_KEY` y `GEMINI_MODEL`, por defecto `gemini-3.8-flash`). Sin la key la API arranca igual y el reporte responde 502 (`GeminiConfig`).
 - [x] `POST /dispositivos/{id}/reportes` (`ReporteService` y `ReporteDatosRepository`):
   - Usa las consultas 1, 2 y 3 y el prompt del contrato.
   - Responde 422 `DATOS_INSUFICIENTES` con menos de 10 mediciones, y 502 `IA_NO_DISPONIBLE` si falla el modelo (en ese caso no se guarda nada).
@@ -130,7 +130,7 @@ Validado con el emulador: el nodo cambia con cada lectura; las alertas aparecen 
 
 **Terminada cuando:** se generan reportes con 1 sensor y con 4 sensores, y el de 1 sensor menciona a los demás como no disponibles.
 
-Validado con el modelo simulado y con una key falsa (la petición llega a Gemini, que responde "API key not valid", y la API devuelve 502 en unos 3 s sin guardar nada). Falta generar los dos reportes reales cuando haya `GEMINI_API_KEY` y confirmar que `gemini-2.5-flash` sigue disponible.
+Validado con el modelo simulado y con una key falsa (la petición llega a Gemini, que responde "API key not valid", y la API devuelve 502 en unos 3 s sin guardar nada). Con la key real (18 de octubre de 2026), `gemini-2.5-flash` ya no responde (404), así que el modelo por defecto pasó a `gemini-3.8-flash`, que generó un reporte real de 24 h en unos 25 s.
 
 ### Fase 7 — Despliegue y calidad
 

@@ -352,7 +352,7 @@ Cuerpo `{ "horas": 24 }` (1–72, por defecto 24). Responde 201:
   "sensores": ["HUMEDAD_SUELO", "TEMPERATURA"],
   "sensoresSinDatos": ["HUMEDAD_AIRE", "LUZ"],
   "contenido": "## Hallazgos\n- La humedad del suelo bajó de 44 % a 30 %...",
-  "modelo": "gemini-2.5-flash",
+  "modelo": "gemini-3.8-flash",
   "creadoEn": "2026-10-16T16:20:09Z"
 }
 ```
@@ -426,7 +426,7 @@ Forma del JSON (fechas como `2026-10-16 10:00`, en hora de Guatemala):
 }
 ```
 
-La API llama al modelo fuera de una transacción, para no ocupar una conexión de la base mientras espera. Configuración: `GEMINI_API_KEY` (Google AI Studio) y `GEMINI_MODEL` (por defecto `gemini-2.5-flash`), con 60 s de tiempo máximo y un reintento.
+La API llama al modelo fuera de una transacción, para no ocupar una conexión de la base mientras espera. Configuración: `GEMINI_API_KEY` (Google AI Studio) y `GEMINI_MODEL` (por defecto `gemini-3.8-flash`; `gemini-2.5-flash` ya no responde), con 60 s de tiempo máximo y un reintento.
 
 ```text
 Eres un agrónomo que revisa una maceta monitoreada con sensores.
