@@ -1,0 +1,210 @@
+# AgroIoT — peticiones de demo de la API
+#
+# Se ejecutan desde VS Code (extensión "REST Client") o IntelliJ (HTTP Client integrado):
+# clic en "Send Request" sobre cada petición.
+#
+# Antes: base de datos y API arriba (ver README) y, para tener datos, el simulador:
+#   node simulador/simulador.mjs historial
+#   node simulador/simulador.mjs vivo
+#
+# Cada bloque indica en qué fase del plan (docs/plan-backend.md) queda listo.
+# Mientras tanto, el endpoint responde 501 NO_IMPLEMENTADO.
+
+@api = http://localhost:8080/api
+# La misma DEVICE_API_KEY de backend/.env
+@apiKey = cambia-esta-clave
+@dispositivo = maceta-01
+
+### =====================================================================
+### Salud (fase 0 · lista)
+### =====================================================================
+
+### Estado de la API, la base de datos y Firebase
+GET {{api}}/salud
+
+### =====================================================================
+### Lecturas del ESP32 (fase 0 · lista)
+### =====================================================================
+
+### Lectura correcta con dos sensores → 201
+POST {{api}}/lecturas
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "dispositivoId": "{{dispositivo}}",
+  "mediciones": [
+    { "tipo": "HUMEDAD_SUELO", "valor": 31.4 },
+    { "tipo": "TEMPERATURA", "valor": 24.5 }
+  ]
+}
+
+### Una medición fuera de rango se descarta y el resto se guarda → 201
+POST {{api}}/lecturas
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "dispositivoId": "{{dispositivo}}",
+  "mediciones": [
+    { "tipo": "HUMEDAD_SUELO", "valor": 150 },
+    { "tipo": "TEMPERATURA", "valor": 24.5 }
+  ]
+}
+
+### Ninguna medición válida → 422 SIN_MEDICIONES_VALIDAS
+POST {{api}}/lecturas
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "dispositivoId": "{{dispositivo}}",
+  "mediciones": [
+    { "tipo": "HUMEDAD_SUELO", "valor": 150 },
+    { "tipo": "CO2", "valor": 400 }
+  ]
+}
+
+### Sin X-Api-Key → 401 NO_AUTORIZADO
+POST {{api}}/lecturas
+Content-Type: application/json
+
+{
+  "dispositivoId": "{{dispositivo}}",
+  "mediciones": [{ "tipo": "TEMPERATURA", "valor": 24.5 }]
+}
+
+### Dispositivo inexistente → 404 DISPOSITIVO_NO_ENCONTRADO
+POST {{api}}/lecturas
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "dispositivoId": "maceta-99",
+  "mediciones": [{ "tipo": "TEMPERATURA", "valor": 24.5 }]
+}
+
+### medidaEn en el futuro → 400 VALIDACION
+POST {{api}}/lecturas
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "dispositivoId": "{{dispositivo}}",
+  "medidaEn": "2099-01-01T00:00:00Z",
+  "mediciones": [{ "tipo": "TEMPERATURA", "valor": 24.5 }]
+}
+
+### Lista de mediciones vacía → 400 VALIDACION
+POST {{api}}/lecturas
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{
+  "dispositivoId": "{{dispositivo}}",
+  "mediciones": []
+}
+
+### =====================================================================
+### Dispositivo (GET: fase 0 · lista; PATCH: fase 2 · lista)
+### =====================================================================
+
+### Configuración y sensores detectados (una tarjeta por sensor)
+GET {{api}}/dispositivos/{{dispositivo}}
+
+### Dispositivo inexistente → 404 DISPOSITIVO_NO_ENCONTRADO
+GET {{api}}/dispositivos/maceta-99
+
+### Cambiar configuración → 200 con el dispositivo completo
+PATCH {{api}}/dispositivos/{{dispositivo}}
+Content-Type: application/json
+
+{ "riegoAutomatico": true, "umbralRiego": 40 }
+
+### Umbral fuera de rango → 400 VALIDACION
+PATCH {{api}}/dispositivos/{{dispositivo}}
+Content-Type: application/json
+
+{ "umbralRiego": 150 }
+
+### Sin bomba: el riego manual pasa a responder 409
+PATCH {{api}}/dispositivos/{{dispositivo}}
+Content-Type: application/json
+
+{ "tieneBomba": false }
+
+### Volver a poner la bomba
+PATCH {{api}}/dispositivos/{{dispositivo}}
+Content-Type: application/json
+
+{ "tieneBomba": true }
+
+### =====================================================================
+### Mediciones para gráficas (fase 2 · lista)
+### =====================================================================
+
+### Últimas 24 h, sin agrupar
+GET {{api}}/dispositivos/{{dispositivo}}/mediciones
+
+### Últimas 24 h por hora (promedio, min y max)
+GET {{api}}/dispositivos/{{dispositivo}}/mediciones?agrupacion=HORA
+
+### Solo algunos sensores
+GET {{api}}/dispositivos/{{dispositivo}}/mediciones?tipos=HUMEDAD_SUELO,TEMPERATURA&agrupacion=HORA
+
+### =====================================================================
+### Riego (fase 3 · lista)
+### =====================================================================
+
+### Regar ahora con la duración configurada → 202 PENDIENTE
+POST {{api}}/dispositivos/{{dispositivo}}/riegos
+
+### Regar 8 segundos → 202 (o 409 RIEGO_EN_CURSO si ya hay uno abierto)
+POST {{api}}/dispositivos/{{dispositivo}}/riegos
+Content-Type: application/json
+
+{ "duracionSeg": 8 }
+
+### Historial de riegos, del más reciente al más antiguo
+GET {{api}}/dispositivos/{{dispositivo}}/riegos?limite=20
+
+### Confirmación del ESP32 (normalmente la envía el simulador).
+### Cambia 1 por el id del comando. 409 COMANDO_NO_ENVIADO si no está ENVIADO.
+POST {{api}}/comandos/1/confirmacion
+X-Api-Key: {{apiKey}}
+Content-Type: application/json
+
+{ "dispositivoId": "{{dispositivo}}", "estado": "EJECUTADO", "detalle": null }
+
+### Consultar el riego sin enviar lectura (opcional, ESP32) → 200 con el comando (queda ENVIADO) o 204
+GET {{api}}/dispositivos/{{dispositivo}}/comandos/pendiente
+X-Api-Key: {{apiKey}}
+
+### =====================================================================
+### Alertas (fase 4 · lista)
+### =====================================================================
+
+### Alertas activas
+GET {{api}}/dispositivos/{{dispositivo}}/alertas
+
+### Todas las alertas
+GET {{api}}/dispositivos/{{dispositivo}}/alertas?estado=TODAS
+
+### Resolver una alerta (cambia 1 por el id) → 200 con resueltaEn lleno
+POST {{api}}/alertas/1/resolver
+
+### =====================================================================
+### Reportes de IA (fase 6)
+### =====================================================================
+
+### Generar un reporte de las últimas 24 h → 201 (sin GEMINI_API_KEY → 502 IA_NO_DISPONIBLE)
+POST {{api}}/dispositivos/{{dispositivo}}/reportes
+Content-Type: application/json
+
+{ "horas": 24 }
+
+### Lista de reportes (sin contenido)
+GET {{api}}/dispositivos/{{dispositivo}}/reportes
+
+### Un reporte completo (cambia 1 por el id)
+GET {{api}}/reportes/1

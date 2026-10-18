@@ -1,73 +1,106 @@
-import { useEffect, useState } from 'react'
-import { api, ApiError } from './api/cliente'
-import { mockDispositivo } from './mocks'
-import type { Dispositivo, SensorDetectado } from './types/contrato'
+import { useState } from 'react';
+import { Layout } from './components/Layout';
+import { Login } from './components/Login';
+import { OverviewView } from './components/Overview/OverviewView';
+import { POTS_DATA } from './data/potsData';
+import type { PotData } from './data/potsData';
+import { useMaceta } from './hooks/useMaceta';
 
-const DISPOSITIVO_ID = 'maceta-01'
-
-type Origen = 'api' | 'mock'
+const POT_01_LOADING: PotData = {
+  ...POTS_DATA['01'],
+  name: 'Maceta 01',
+  crop: null,
+  zone: null,
+  sector: null,
+  battery: null,
+  soilMoisture: null,
+  vwcRange: null,
+  airTemp: null,
+  tempMin: null,
+  tempMax: null,
+  airHumidity: null,
+  dpv: null,
+  solarExposure: null,
+  waterDispensed: null,
+  waterCycles: null,
+  waterReservoir: null,
+  reservoirPercent: null,
+  isLoading: true,
+};
 
 function App() {
-  const [dispositivo, setDispositivo] = useState<Dispositivo | null>(null)
-  const [origen, setOrigen] = useState<Origen>('api')
-  const [aviso, setAviso] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    let cancelado = false
-    api
-      .dispositivo(DISPOSITIVO_ID)
-      .then((d) => {
-        if (cancelado) return
-        setDispositivo(d)
-        setOrigen('api')
-      })
-      .catch((e: unknown) => {
-        if (cancelado) return
-        // Si la API no responde (o responde error), se muestran los datos de ejemplo del contrato.
-        setAviso(e instanceof ApiError ? `${e.codigo}: ${e.message}` : 'La API no responde')
-        setDispositivo(mockDispositivo)
-        setOrigen('mock')
-      })
-    return () => {
-      cancelado = true
-    }
-  }, [])
+  if (!isAuthenticated) {
+    return <Login onLogin={() => setIsAuthenticated(true)} />;
+  }
 
-  if (!dispositivo) return <p>Cargando…</p>
+  return <Dashboard onLogout={() => setIsAuthenticated(false)} />;
+}
+
+function Dashboard({ onLogout }: { onLogout: () => void }) {
+  const [activeTab, setActiveTab] = useState('overview');
+  const [potsList, setPotsList] = useState<PotData[]>(Object.values(POTS_DATA));
+  const [selectedPotId, setSelectedPotId] = useState('01');
+  const maceta01 = useMaceta();
+
+  const handleAddPot = (newPot: PotData) => {
+    setPotsList(prev => [...prev, newPot]);
+    setSelectedPotId(newPot.id);
+  };
+  const potsActualizadas = potsList.map((pot) => (
+    pot.id === '01' ? maceta01.pot ?? POT_01_LOADING : pot
+  ));
+  const macetaSeleccionada = potsActualizadas.find((pot) => pot.id === selectedPotId);
 
   return (
-    <main>
-      <h1>{dispositivo.nombre}</h1>
-      <p>
-        {dispositivo.conectado ? 'Conectado' : 'Desconectado'}
-        {origen === 'mock' && <> · Datos de ejemplo ({aviso})</>}
-      </p>
-
-      {dispositivo.sensores.length === 0 ? (
-        <p>Este dispositivo todavía no ha enviado mediciones.</p>
-      ) : (
-        <section style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          {/* Una tarjeta por sensor que llegó de la API: nunca cuatro fijas. */}
-          {dispositivo.sensores.map((s) => (
-            <TarjetaSensor key={s.tipo} sensor={s} />
-          ))}
-        </section>
+    <Layout 
+      onLogout={onLogout}
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab}
+      potsList={potsActualizadas}
+      selectedPotId={selectedPotId}
+      onSelectPot={setSelectedPotId}
+      onAddPot={handleAddPot}
+    >
+      {activeTab === 'overview' && (
+        selectedPotId === '01' && !maceta01.pot ? (
+          <div className="alert alert-dark border-secondary border-opacity-25 text-white" role="status">
+            {maceta01.cargando ? 'Conectando con la API de Maceta 01…' : (
+              <>
+                <p className="mb-2">{maceta01.error ?? 'No hay datos disponibles para Maceta 01.'}</p>
+                <button type="button" className="btn btn-sm btn-outline-light" onClick={maceta01.refrescar}>
+                  Reintentar conexión
+                </button>
+              </>
+            )}
+          </div>
+        ) : macetaSeleccionada ? (
+          <OverviewView
+            pot={macetaSeleccionada}
+            potsList={potsActualizadas}
+            selectedPotId={selectedPotId}
+            onSelectPot={setSelectedPotId}
+            live={selectedPotId === '01' ? maceta01 : undefined}
+          />
+        ) : null
       )}
-    </main>
-  )
+
+      {activeTab !== 'overview' && (
+        <div className="p-4 rounded-3 border border-secondary border-opacity-10" style={{ backgroundColor: '#131B2E' }}>
+          <h4 className="fw-bold text-white mb-2">
+            {activeTab === 'devices' && 'Gestión de Dispositivos'}
+            {activeTab === 'analytics' && 'Analíticas y Telemetría'}
+            {activeTab === 'alerts' && 'Centro de Alertas'}
+            {activeTab === 'settings' && 'Configuración del Sistema'}
+          </h4>
+          <p className="text-secondary mb-0" style={{ color: '#94A3B8', fontSize: '14px' }}>
+            Esta sección se puede construir según los requerimientos específicos.
+          </p>
+        </div>
+      )}
+    </Layout>
+  );
 }
 
-function TarjetaSensor({ sensor }: { sensor: SensorDetectado }) {
-  const activo = sensor.estado === 'ACTIVO'
-  return (
-    <article style={{ border: '1px solid #999', padding: 12, minWidth: 160, opacity: activo ? 1 : 0.5 }}>
-      <h2 style={{ fontSize: '1rem', margin: 0 }}>{sensor.nombre}</h2>
-      <p style={{ fontSize: '1.5rem', margin: '8px 0' }}>
-        {sensor.ultimoValor ?? '—'} {sensor.unidad}
-      </p>
-      <p style={{ margin: 0 }}>{sensor.estado}</p>
-    </article>
-  )
-}
-
-export default App
+export default App;

@@ -1,18 +1,4 @@
-import type {
-  Alerta,
-  ConsultaMediciones,
-  Dispositivo,
-  DispositivoPatch,
-  ErrorApi,
-  FiltroAlertas,
-  Mediciones,
-  Reporte,
-  ReporteRequest,
-  ReporteResumen,
-  Riego,
-  RiegoRequest,
-  Salud,
-} from '../types/contrato'
+import type { Alerta, ConsultaMediciones, Dispositivo, DispositivoPatch, ErrorApi, FiltroAlertas, Mediciones, Reporte, ReporteRequest, ReporteResumen, Riego, RiegoRequest, Salud, } from '../types/contrato'
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api').replace(/\/+$/, '')
 

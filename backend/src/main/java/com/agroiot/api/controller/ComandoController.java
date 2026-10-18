@@ -8,17 +8,24 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.agroiot.api.dto.ConfirmacionRequest;
 import com.agroiot.api.dto.ConfirmacionResponse;
-import com.agroiot.api.exception.ApiException;
+import com.agroiot.api.service.RiegoService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/comandos")
 public class ComandoController {
 
-	/** ESP32 (X-Api-Key). */
+	private final RiegoService riegos;
+
+	public ComandoController(RiegoService riegos) {
+		this.riegos = riegos;
+	}
+
+	/** ESP32 (X-Api-Key). estado = EJECUTADO | FALLIDO. */
 	@PostMapping("/{comandoId}/confirmacion")
-	public ConfirmacionResponse confirmar(@PathVariable Long comandoId,
-			@RequestBody(required = false) ConfirmacionRequest req) {
-		throw ApiException.noImplementado("POST /comandos/{comandoId}/confirmacion");
+	public ConfirmacionResponse confirmar(@PathVariable Long comandoId, @Valid @RequestBody ConfirmacionRequest req) {
+		return riegos.confirmar(comandoId, req);
 	}
 
 }

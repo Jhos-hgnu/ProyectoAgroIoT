@@ -78,6 +78,13 @@ public class ComandoRiego {
 		this.enviadoEn = ahora;
 	}
 
+	/** ENVIADO → EJECUTADO o FALLIDO: lo confirma el ESP32. */
+	public void finalizar(EstadoComando estadoFinal, String detalle, Instant ahora) {
+		this.estado = estadoFinal;
+		this.detalle = detalle;
+		this.finalizadoEn = ahora;
+	}
+
 	public Long getId() { return id; }
 	public Dispositivo getDispositivo() { return dispositivo; }
 	public OrigenComando getOrigen() { return origen; }
