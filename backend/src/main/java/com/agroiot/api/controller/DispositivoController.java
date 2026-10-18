@@ -30,6 +30,7 @@ import com.agroiot.api.exception.ApiException;
 import com.agroiot.api.service.AlertaService;
 import com.agroiot.api.service.DispositivoService;
 import com.agroiot.api.service.MedicionService;
+import com.agroiot.api.service.ReporteService;
 import com.agroiot.api.service.RiegoService;
 
 import jakarta.validation.Valid;
@@ -44,13 +45,15 @@ public class DispositivoController {
 	private final MedicionService mediciones;
 	private final RiegoService riegos;
 	private final AlertaService alertas;
+	private final ReporteService reportes;
 
 	public DispositivoController(DispositivoService dispositivos, MedicionService mediciones, RiegoService riegos,
-			AlertaService alertas) {
+			AlertaService alertas, ReporteService reportes) {
 		this.dispositivos = dispositivos;
 		this.mediciones = mediciones;
 		this.riegos = riegos;
 		this.alertas = alertas;
+		this.reportes = reportes;
 	}
 
 	@GetMapping
@@ -95,16 +98,19 @@ public class DispositivoController {
 		return alertas.listar(id, estado, limite);
 	}
 
-	/** Responde 201 cuando se implemente. */
+	/** Reporte de IA de las últimas {horas} horas (1 a 72, por defecto 24). Tarda unos segundos: llama a Gemini. */
 	@PostMapping("/reportes")
+	@ResponseStatus(HttpStatus.CREATED)
 	public ReporteResponse generarReporte(@PathVariable String id,
-			@RequestBody(required = false) ReporteRequest req) {
-		throw ApiException.noImplementado("POST /dispositivos/{id}/reportes");
+			@Valid @RequestBody(required = false) ReporteRequest req) {
+		int horas = req == null || req.horas() == null ? ReporteRequest.HORAS_POR_DEFECTO : req.horas();
+		return reportes.generar(id, horas);
 	}
 
 	@GetMapping("/reportes")
-	public List<ReporteResumen> reportes(@PathVariable String id) {
-		throw ApiException.noImplementado("GET /dispositivos/{id}/reportes");
+	public List<ReporteResumen> reportes(@PathVariable String id,
+			@RequestParam(defaultValue = "20") @Min(1) @Max(100) int limite) {
+		return reportes.listar(id, limite);
 	}
 
 	/** ESP32 (X-Api-Key). 200 con el comando o 204 si no hay. */
