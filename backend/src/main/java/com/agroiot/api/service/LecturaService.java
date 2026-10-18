@@ -21,12 +21,10 @@ import com.agroiot.api.dto.MedicionDescartada;
 import com.agroiot.api.dto.MedicionRequest;
 import com.agroiot.api.dto.MotivoDescarte;
 import com.agroiot.api.entity.Dispositivo;
-import com.agroiot.api.entity.EstadoComando;
 import com.agroiot.api.entity.Lectura;
 import com.agroiot.api.entity.Medicion;
 import com.agroiot.api.entity.TipoSensor;
 import com.agroiot.api.exception.ApiException;
-import com.agroiot.api.repository.ComandoRiegoRepository;
 import com.agroiot.api.repository.DispositivoRepository;
 import com.agroiot.api.repository.DispositivoSensorRepository;
 import com.agroiot.api.repository.LecturaRepository;
@@ -45,20 +43,17 @@ public class LecturaService {
 	private final TipoSensorRepository tiposSensor;
 	private final LecturaRepository lecturas;
 	private final DispositivoSensorRepository dispositivoSensores;
-	private final ComandoRiegoRepository comandos;
 	private final RiegoService riegos;
 	private final AlertaService alertas;
 	private final EstadoVivoService estadoVivo;
 
 	public LecturaService(DispositivoRepository dispositivos, TipoSensorRepository tiposSensor,
 			LecturaRepository lecturas, DispositivoSensorRepository dispositivoSensores,
-			ComandoRiegoRepository comandos, RiegoService riegos, AlertaService alertas,
-			EstadoVivoService estadoVivo) {
+			RiegoService riegos, AlertaService alertas, EstadoVivoService estadoVivo) {
 		this.dispositivos = dispositivos;
 		this.tiposSensor = tiposSensor;
 		this.lecturas = lecturas;
 		this.dispositivoSensores = dispositivoSensores;
-		this.comandos = comandos;
 		this.riegos = riegos;
 		this.alertas = alertas;
 		this.estadoVivo = estadoVivo;
@@ -122,15 +117,7 @@ public class LecturaService {
 		}
 
 		// 6. Expirar comandos viejos y entregar el PENDIENTE (si hay) marcándolo ENVIADO.
-		riegos.expirarAbiertos(dispositivo.getId());
-		ComandoEntregado comando = comandos
-				.findFirstByDispositivo_IdAndEstadoOrderByCreadoEnAsc(dispositivo.getId(), EstadoComando.PENDIENTE)
-				.map(c -> {
-					c.marcarEnviado(ahora);
-					estadoVivo.publicarRiego(c);
-					return new ComandoEntregado(c.getId(), ComandoEntregado.REGAR, c.getDuracionSeg());
-				})
-				.orElse(null);
+		ComandoEntregado comando = riegos.entregarPendiente(dispositivo.getId(), ahora).orElse(null);
 
 		List<String> aceptadas = lectura.getMediciones().stream().map(m -> m.getTipo().getCodigo()).toList();
 		return new LecturaResponse(lectura.getId(), aceptadas, descartadas, comando);

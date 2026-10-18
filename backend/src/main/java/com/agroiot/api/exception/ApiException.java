@@ -61,10 +61,6 @@ public class ApiException extends RuntimeException {
 		return new ApiException(HttpStatus.BAD_GATEWAY, "IA_NO_DISPONIBLE", mensaje);
 	}
 
-	public static ApiException noImplementado(String ruta) {
-		return new ApiException(HttpStatus.NOT_IMPLEMENTED, "NO_IMPLEMENTADO", "Endpoint aún no implementado: " + ruta);
-	}
-
 	public HttpStatus getStatus() {
 		return status;
 	}

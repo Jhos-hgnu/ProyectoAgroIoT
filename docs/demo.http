@@ -176,6 +176,10 @@ Content-Type: application/json
 
 { "dispositivoId": "{{dispositivo}}", "estado": "EJECUTADO", "detalle": null }
 
+### Consultar el riego sin enviar lectura (opcional, ESP32) → 200 con el comando (queda ENVIADO) o 204
+GET {{api}}/dispositivos/{{dispositivo}}/comandos/pendiente
+X-Api-Key: {{apiKey}}
+
 ### =====================================================================
 ### Alertas (fase 4 · lista)
 ### =====================================================================

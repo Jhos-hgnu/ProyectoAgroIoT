@@ -3,6 +3,7 @@ package com.agroiot.api.service;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.agroiot.api.dto.ComandoEntregado;
 import com.agroiot.api.dto.ConfirmacionRequest;
 import com.agroiot.api.dto.ConfirmacionResponse;
 import com.agroiot.api.dto.RiegoResponse;
@@ -110,6 +112,30 @@ public class RiegoService {
 		log.info("Riego automático #{} para {}: suelo {} % < umbral {} %", c.getId(), d.getId(), humedadSuelo,
 				d.getUmbralRiego());
 		estadoVivo.publicarRiego(c);
+	}
+
+	/**
+	 * Paso 6 de POST /lecturas y GET /dispositivos/{id}/comandos/pendiente: expira los comandos viejos y, si hay
+	 * uno PENDIENTE, lo marca ENVIADO y lo devuelve. Desde ahí corren los 2 min para que el ESP32 lo confirme.
+	 */
+	@Transactional
+	public Optional<ComandoEntregado> entregarPendiente(String dispositivoId, Instant ahora) {
+		expirarAbiertos(dispositivoId);
+		return comandos.findFirstByDispositivo_IdAndEstadoOrderByCreadoEnAsc(dispositivoId, EstadoComando.PENDIENTE)
+				.map(c -> {
+					c.marcarEnviado(ahora);
+					estadoVivo.publicarRiego(c);
+					return new ComandoEntregado(c.getId(), ComandoEntregado.REGAR, c.getDuracionSeg());
+				});
+	}
+
+	/** GET /dispositivos/{id}/comandos/pendiente: 404 si el dispositivo no existe. */
+	@Transactional
+	public Optional<ComandoEntregado> consultarPendiente(String dispositivoId) {
+		if (!dispositivos.existsById(dispositivoId)) {
+			throw ApiException.dispositivoNoEncontrado(dispositivoId);
+		}
+		return entregarPendiente(dispositivoId, Instant.now());
 	}
 
 	/** GET /dispositivos/{id}/riegos, del más reciente al más antiguo. */

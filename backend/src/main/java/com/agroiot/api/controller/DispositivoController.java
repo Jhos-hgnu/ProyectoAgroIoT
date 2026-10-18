@@ -26,7 +26,6 @@ import com.agroiot.api.dto.ReporteResponse;
 import com.agroiot.api.dto.ReporteResumen;
 import com.agroiot.api.dto.RiegoRequest;
 import com.agroiot.api.dto.RiegoResponse;
-import com.agroiot.api.exception.ApiException;
 import com.agroiot.api.service.AlertaService;
 import com.agroiot.api.service.DispositivoService;
 import com.agroiot.api.service.MedicionService;
@@ -113,10 +112,13 @@ public class DispositivoController {
 		return reportes.listar(id, limite);
 	}
 
-	/** ESP32 (X-Api-Key). 200 con el comando o 204 si no hay. */
+	/**
+	 * ESP32 (X-Api-Key): consultar el riego sin enviar lectura. 200 con el comando (queda ENVIADO, como en
+	 * POST /lecturas) o 204 si no hay.
+	 */
 	@GetMapping("/comandos/pendiente")
 	public ResponseEntity<ComandoEntregado> comandoPendiente(@PathVariable String id) {
-		throw ApiException.noImplementado("GET /dispositivos/{id}/comandos/pendiente");
+		return riegos.consultarPendiente(id).map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.noContent().build());
 	}
 
 }

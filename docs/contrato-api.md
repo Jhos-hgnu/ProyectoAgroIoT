@@ -57,7 +57,7 @@ Todos los errores tienen la misma forma:
 | 404 | El dispositivo, comando, alerta o reporte no existe (`DISPOSITIVO_NO_ENCONTRADO`, `COMANDO_NO_ENCONTRADO`, `ALERTA_NO_ENCONTRADA`, `REPORTE_NO_ENCONTRADO`) |
 | 409 | El estado no lo permite (`RIEGO_EN_CURSO`, `BOMBA_NO_DISPONIBLE`, `COMANDO_NO_ENVIADO`) |
 | 422 | Petición válida pero sin datos suficientes (`SIN_MEDICIONES_VALIDAS`, `DATOS_INSUFICIENTES`) |
-| 501 | Endpoint definido pero aún no implementado (`NO_IMPLEMENTADO`) |
+| 501 | Endpoint definido pero aún no implementado (`NO_IMPLEMENTADO`). Desde la fase 7 todos están implementados y ninguno lo responde |
 | 502 | Falló el servicio de IA (`IA_NO_DISPONIBLE`) |
 
 ## PostgreSQL: el historial
@@ -250,6 +250,10 @@ X-Api-Key: <clave>
 - 409 `COMANDO_NO_ENVIADO` si el comando no está en `ENVIADO`. Incluye la confirmación que llega más de 2 min después de crearse el comando: el comando queda `EXPIRADO`.
 - 404 `COMANDO_NO_ENCONTRADO` si el comando no existe o es de otro `dispositivoId`.
 - 400 `VALIDACION` si `estado` no es `EJECUTADO` ni `FALLIDO`.
+
+### GET /dispositivos/{id}/comandos/pendiente (opcional)
+
+Para que el ESP32 consulte el riego sin enviar una lectura (`X-Api-Key`). Hace lo mismo que el paso 6 de `POST /lecturas`: expira los comandos viejos y, si hay uno `PENDIENTE`, lo marca `ENVIADO` y responde 200 con `{ "id": 88, "accion": "REGAR", "duracionSeg": 5 }`. Desde ahí corren los 2 min para confirmarlo. Si no hay comando, 204 sin cuerpo; 404 `DISPOSITIVO_NO_ENCONTRADO` si el dispositivo no existe. No cuenta como lectura: no cambia `ultimaConexion`.
 
 ### GET /dispositivos/{id}
 
