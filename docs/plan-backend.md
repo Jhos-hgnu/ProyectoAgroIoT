@@ -134,10 +134,12 @@ Validado con el modelo simulado y con una key falsa (la petición llega a Gemini
 
 ### Fase 7 — Despliegue y calidad
 
-- [ ] Pruebas de integración con MockMvc y PostgreSQL para las reglas clave: descartes, 422, ciclo del comando, apertura y cierre de alertas.
-- [ ] Desplegar la API en Render (`backend/Dockerfile`) con la base en Neon, y configurar `CORS_ORIGINS` con la URL del frontend.
-- [ ] Repasar la lista "Pruebas de los modos con sensores parciales" del contrato.
-- [ ] `GET /dispositivos/{id}/comandos/pendiente` (opcional en el contrato).
+- [x] Pruebas de integración con MockMvc y PostgreSQL para las reglas clave: descartes, 422, ciclo del comando, apertura y cierre de alertas. Son 59; `SensoresParcialesTest` agrega los descartes y los modos parciales.
+- [x] Imagen Docker ajustada al plan gratuito de Render (512 MB, 0.1 CPU): arranque de 122 s a 44 s y unos 206 MB bajo carga.
+- [x] Guía de despliegue: [`despliegue.md`](despliegue.md).
+- [ ] Desplegar la API en Render (`backend/Dockerfile`) con la base en Neon, y configurar `CORS_ORIGINS` con la URL del frontend. Falta crear las cuentas.
+- [x] Repasar la lista "Pruebas de los modos con sensores parciales" del contrato: la parte de la API está cubierta; faltan las casillas del dashboard, de Gemini y de Render.
+- [x] `GET /dispositivos/{id}/comandos/pendiente` (opcional en el contrato).
 
 ## Guion sugerido para la demo (fases 1 a 4)
 
