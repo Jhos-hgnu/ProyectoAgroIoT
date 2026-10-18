@@ -18,7 +18,7 @@ Todavía no tenemos el ESP32 ni los sensores, así que un **simulador** hace de 
 | Formato único de error (`ApiException` + `GlobalExceptionHandler`) | Hecho |
 | `X-Api-Key` en los endpoints del ESP32 (`ApiKeyFilter`) | Hecho |
 | CORS configurable con `CORS_ORIGINS` | Hecho |
-| `GET /salud` | Hecho (Firebase siempre `NO_CONFIGURADO`) |
+| `GET /salud` | Hecho (Firebase siempre `NO_CONFIGURADO` hasta la fase 5) |
 | `POST /lecturas` | Hecho, salvo el paso 5 (alertas, riego automático y Firebase) |
 | `GET /dispositivos/{id}` | Hecho |
 | Resto de endpoints | Responden 501 `NO_IMPLEMENTADO` |
@@ -109,11 +109,15 @@ Implementado en `AlertaService`, con 9 pruebas en `AlertaTest`. Se probó con `-
 
 ### Fase 5 — Firebase en vivo
 
-- [ ] Agregar `firebase-admin` y leer las credenciales de `FIREBASE_CREDENTIALS` y `FIREBASE_DB_URL`. Si no están configuradas, la API sigue funcionando y `/salud` dice `NO_CONFIGURADO`.
-- [ ] Escribir los nodos de la tabla "Firebase Realtime Database" del contrato: `ultimaConexion`, `sensores/<TIPO>`, `riego`, `alertasActivas/<id>` y la configuración.
-- [ ] Revisar Firebase en `/salud`.
+- [x] Agregar `firebase-admin` (sin Firestore ni Storage) y leer las credenciales de `FIREBASE_CREDENTIALS` y `FIREBASE_DB_URL` (`FirebaseCliente`). Si no están configuradas, la API sigue funcionando y `/salud` dice `NO_CONFIGURADO`.
+- [x] Escribir los nodos de la tabla "Firebase Realtime Database" del contrato: `ultimaConexion`, `sensores/<TIPO>`, `riego`, `alertasActivas/<id>` y la configuración (`EstadoVivoService`). Al arrancar, la API reescribe el nodo completo de cada dispositivo desde PostgreSQL.
+- [x] Revisar Firebase en `/salud`: escribe `salud/revisadaEn` y espera hasta 5 s la confirmación.
+- [x] Emulador local en `firebase/` (ver [`firebase/README.md`](../firebase/README.md)), para desarrollar sin la base real.
+- [x] Pruebas: `SaludTest` (sin Firebase) y `SaludFirebaseErrorTest` (Firebase sin credenciales: la API arranca y `/salud` dice `DEGRADADO`).
 
 **Terminada cuando:** con el simulador en vivo, la consola de Firebase cambia cada 10 s.
+
+Validado con el emulador: el nodo cambia con cada lectura; las alertas aparecen y desaparecen de `alertasActivas` al abrirse, cerrarse solas o resolverse; `riego` pasa por `PENDIENTE`, `ENVIADO` y `EJECUTADO`/`FALLIDO`/`EXPIRADO`; el `PATCH` actualiza la configuración, y una lectura rechazada (422) no cambia nada. Falta repetirlo con la base real cuando esté creada.
 
 ### Fase 6 — Reportes de IA
 

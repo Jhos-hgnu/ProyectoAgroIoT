@@ -149,6 +149,14 @@ Firebase guarda solo el último estado de cada dispositivo: la API lo sobrescrib
 | `alertasActivas/<id>` | Se abre una alerta (se agrega) o se resuelve (se borra) |
 | `nombre`, `tieneBomba`, `riegoAutomatico`, `umbralRiego` | Arranca la API o cambia la configuración del dispositivo |
 
+Detalles:
+
+- **Al arrancar, la API reescribe el nodo completo** de cada dispositivo desde PostgreSQL, así que Firebase se recupera solo si estuvo caído.
+- **`riego` es siempre el último comando**, también cuando termina en `EXPIRADO`. La API expira los comandos al recibir una lectura, una confirmación o un riego nuevo; si el ESP32 se desconecta con un comando `ENVIADO`, el nodo se queda así hasta la siguiente petición. Por eso el frontend debe mostrar "Regando" solo si además el dispositivo está conectado.
+- **Las alertas del sistema** (por ejemplo, riego fallido) no tienen `tipoSensor` ni `valor`: esos campos no aparecen.
+- La API escribe después de guardar en PostgreSQL. Si Firebase falla, la petición responde igual y el error queda en el log.
+- `/salud` escribe `salud/revisadaEn` para comprobar la conexión; el frontend no lo usa.
+
 Lo que calcula el frontend, sin que nadie lo guarde:
 
 - **Conectado:** `ahora − ultimaConexion` < 60 s.
@@ -156,7 +164,7 @@ Lo que calcula el frontend, sin que nadie lo guarde:
 - **Tarjetas:** una por cada clave dentro de `sensores` (`Object.entries`), nunca cuatro fijas.
 - **Regando:** `riego.estado` es `PENDIENTE` o `ENVIADO`.
 
-Reglas de seguridad de Firebase:
+Reglas de seguridad de Firebase (`firebase/database.rules.json`):
 
 ```json
 {
@@ -167,7 +175,7 @@ Reglas de seguridad de Firebase:
 }
 ```
 
-La API escribe con el Admin SDK (`com.google.firebase:firebase-admin`) usando la llave de *service account* desde una variable de entorno (`FIREBASE_CREDENTIALS`, el JSON completo) y la URL de la base en `FIREBASE_DB_URL`.
+La API escribe con el Admin SDK (`com.google.firebase:firebase-admin`) usando la llave de *service account* desde una variable de entorno (`FIREBASE_CREDENTIALS`, el JSON completo o la ruta al archivo) y la URL de la base en `FIREBASE_DB_URL`. Con el emulador local basta la URL; ver [`firebase/README.md`](../firebase/README.md).
 
 ## Contrato de la API
 
