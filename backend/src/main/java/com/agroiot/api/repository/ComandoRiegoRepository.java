@@ -18,6 +18,9 @@ public interface ComandoRiegoRepository extends JpaRepository<ComandoRiego, Long
 	Optional<ComandoRiego> findFirstByDispositivo_IdAndEstadoOrderByCreadoEnAsc(String dispositivoId,
 			EstadoComando estado);
 
+	/** El comando más reciente: el que se publica como nodo riego en Firebase. */
+	Optional<ComandoRiego> findFirstByDispositivo_IdOrderByCreadoEnDescIdDesc(String dispositivoId);
+
 	boolean existsByDispositivo_IdAndEstadoIn(String dispositivoId, Collection<EstadoComando> estados);
 
 	/** Historial de riegos, del más reciente al más antiguo. */

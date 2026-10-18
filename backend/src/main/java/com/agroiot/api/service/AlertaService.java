@@ -32,11 +32,14 @@ public class AlertaService {
 	private final DispositivoRepository dispositivos;
 	private final ReglaAlertaRepository reglas;
 	private final AlertaRepository alertas;
+	private final EstadoVivoService estadoVivo;
 
-	public AlertaService(DispositivoRepository dispositivos, ReglaAlertaRepository reglas, AlertaRepository alertas) {
+	public AlertaService(DispositivoRepository dispositivos, ReglaAlertaRepository reglas, AlertaRepository alertas,
+			EstadoVivoService estadoVivo) {
 		this.dispositivos = dispositivos;
 		this.reglas = reglas;
 		this.alertas = alertas;
+		this.estadoVivo = estadoVivo;
 	}
 
 	/**
@@ -61,25 +64,25 @@ public class AlertaService {
 			Alerta abierta = abiertas.get(r.getId());
 			if (seCumple(r, valor)) {
 				if (abierta == null) {
-					alertas.save(new Alerta(d, r, r.getTipo(), valor, r.getSeveridad(), r.getMensaje()));
+					estadoVivo.publicarAlertaAbierta(
+							alertas.save(new Alerta(d, r, r.getTipo(), valor, r.getSeveridad(), r.getMensaje())));
 					log.info("Alerta abierta en {}: {} ({} {} {})", d.getId(), r.getMensaje(), valor,
 							r.getOperador(), r.getUmbral());
 				}
 			} else if (abierta != null) {
 				abierta.setResueltaEn(ahora);
+				estadoVivo.quitarAlerta(abierta);
 				log.info("Alerta #{} cerrada sola en {}: {} = {}", abierta.getId(), d.getId(),
 						r.getTipo().getCodigo(), valor);
 			}
 		}
-		// TODO (fase 5): reflejar alertasActivas en Firebase.
 	}
 
 	/** Alerta del sistema (sin regla ni sensor), p. ej. riego fallido. No se cierra sola: se resuelve a mano. */
 	@Transactional
 	public void abrirDelSistema(Dispositivo d, Severidad severidad, String mensaje) {
-		alertas.save(new Alerta(d, null, null, null, severidad, mensaje));
+		estadoVivo.publicarAlertaAbierta(alertas.save(new Alerta(d, null, null, null, severidad, mensaje)));
 		log.warn("Alerta del sistema en {}: {}", d.getId(), mensaje);
-		// TODO (fase 5): reflejar alertasActivas en Firebase.
 	}
 
 	/** GET /dispositivos/{id}/alertas?estado=ACTIVA|TODAS, más reciente primero. */
@@ -106,7 +109,7 @@ public class AlertaService {
 		Alerta a = alertas.findById(alertaId).orElseThrow(() -> ApiException.alertaNoEncontrada(alertaId));
 		if (a.getResueltaEn() == null) {
 			a.setResueltaEn(Instant.now());
-			// TODO (fase 5): quitarla de alertasActivas en Firebase.
+			estadoVivo.quitarAlerta(a);
 		}
 		return aRespuesta(a);
 	}

@@ -28,10 +28,13 @@ public class DispositivoService {
 
 	private final DispositivoRepository dispositivos;
 	private final DispositivoSensorRepository dispositivoSensores;
+	private final EstadoVivoService estadoVivo;
 
-	public DispositivoService(DispositivoRepository dispositivos, DispositivoSensorRepository dispositivoSensores) {
+	public DispositivoService(DispositivoRepository dispositivos, DispositivoSensorRepository dispositivoSensores,
+			EstadoVivoService estadoVivo) {
 		this.dispositivos = dispositivos;
 		this.dispositivoSensores = dispositivoSensores;
+		this.estadoVivo = estadoVivo;
 	}
 
 	@Transactional(readOnly = true)
@@ -68,7 +71,7 @@ public class DispositivoService {
 		if (cambios.duracionRiegoSeg() != null) d.setDuracionRiegoSeg(cambios.duracionRiegoSeg());
 		if (cambios.esperaRiegoMin() != null) d.setEsperaRiegoMin(cambios.esperaRiegoMin());
 		if (cambios.tieneBomba() != null) d.setTieneBomba(cambios.tieneBomba());
-		// TODO (fase 5): publicar riegoAutomatico, umbralRiego y tieneBomba en Firebase.
+		estadoVivo.publicarConfiguracion(d);
 
 		dispositivos.flush();
 		return obtener(id);

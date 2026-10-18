@@ -48,10 +48,12 @@ public class LecturaService {
 	private final ComandoRiegoRepository comandos;
 	private final RiegoService riegos;
 	private final AlertaService alertas;
+	private final EstadoVivoService estadoVivo;
 
 	public LecturaService(DispositivoRepository dispositivos, TipoSensorRepository tiposSensor,
 			LecturaRepository lecturas, DispositivoSensorRepository dispositivoSensores,
-			ComandoRiegoRepository comandos, RiegoService riegos, AlertaService alertas) {
+			ComandoRiegoRepository comandos, RiegoService riegos, AlertaService alertas,
+			EstadoVivoService estadoVivo) {
 		this.dispositivos = dispositivos;
 		this.tiposSensor = tiposSensor;
 		this.lecturas = lecturas;
@@ -59,6 +61,7 @@ public class LecturaService {
 		this.comandos = comandos;
 		this.riegos = riegos;
 		this.alertas = alertas;
+		this.estadoVivo = estadoVivo;
 	}
 
 	@Transactional
@@ -108,22 +111,23 @@ public class LecturaService {
 		}
 		dispositivo.setUltimaConexion(ahora);
 
-		// 5. Solo en tiempo real (medidaEn de hace menos de 2 min): alertas y riego automático.
+		// 5. Solo en tiempo real (medidaEn de hace menos de 2 min): alertas, riego automático y Firebase.
 		//    El historial se guarda pero no dispara riegos, alertas ni Firebase.
 		if (!medidaEn.isBefore(ahora.minus(TIEMPO_REAL))) {
 			Map<String, BigDecimal> valores = lectura.getMediciones().stream()
 					.collect(Collectors.toMap(m -> m.getTipo().getCodigo(), Medicion::getValor));
 			alertas.evaluar(dispositivo, valores);
 			riegos.evaluarRiegoAutomatico(dispositivo, valores.get(HUMEDAD_SUELO));
-			// TODO (fase 5): actualizar Firebase.
+			estadoVivo.publicarLectura(dispositivo, medidaEn, lectura.getMediciones());
 		}
 
 		// 6. Expirar comandos viejos y entregar el PENDIENTE (si hay) marcándolo ENVIADO.
-		comandos.expirarAbiertos(dispositivo.getId());
+		riegos.expirarAbiertos(dispositivo.getId());
 		ComandoEntregado comando = comandos
 				.findFirstByDispositivo_IdAndEstadoOrderByCreadoEnAsc(dispositivo.getId(), EstadoComando.PENDIENTE)
 				.map(c -> {
 					c.marcarEnviado(ahora);
+					estadoVivo.publicarRiego(c);
 					return new ComandoEntregado(c.getId(), ComandoEntregado.REGAR, c.getDuracionSeg());
 				})
 				.orElse(null);
