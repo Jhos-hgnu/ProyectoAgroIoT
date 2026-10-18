@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.agroiot.api.dto.SaludResponse;
+import com.agroiot.api.firebase.FirebaseCliente;
 
 @Service
 public class SaludService {
@@ -15,12 +16,14 @@ public class SaludService {
 	private static final Logger log = LoggerFactory.getLogger(SaludService.class);
 
 	private final JdbcTemplate jdbc;
+	private final FirebaseCliente firebase;
 
-	public SaludService(JdbcTemplate jdbc) {
+	public SaludService(JdbcTemplate jdbc, FirebaseCliente firebase) {
 		this.jdbc = jdbc;
+		this.firebase = firebase;
 	}
 
-	/** Siempre responde: si la BD falla, baseDatos = ERROR y estado = DEGRADADO. */
+	/** Siempre responde: si la BD o Firebase fallan, ese campo = ERROR y estado = DEGRADADO. */
 	public SaludResponse revisar() {
 		String baseDatos;
 		try {
@@ -30,8 +33,7 @@ public class SaludService {
 			log.warn("Salud: la base de datos no responde: {}", ex.getMessage());
 			baseDatos = "ERROR";
 		}
-		// TODO: verificar Firebase cuando se integre el Admin SDK.
-		String firebase = "NO_CONFIGURADO";
+		String firebase = this.firebase.revisar();
 		String estado = "OK".equals(baseDatos) && !"ERROR".equals(firebase) ? "OK" : "DEGRADADO";
 		return new SaludResponse(estado, baseDatos, firebase, Instant.now());
 	}

@@ -48,6 +48,28 @@
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- Solo se usa Realtime Database: Firestore y Storage se excluyen para ahorrar memoria (Render, 512 MB). -->
+		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>9.9.0</version>
+			<exclusions>
+				<exclusion>
+					<groupId>com.google.cloud</groupId>
+					<artifactId>google-cloud-firestore</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.google.cloud</groupId>
+					<artifactId>google-cloud-storage</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- FirebaseOptions lo necesita y antes llegaba con las dependencias excluidas. Misma versión que google-http-client. -->
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-jackson2</artifactId>
+			<version>2.1.0</version>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
