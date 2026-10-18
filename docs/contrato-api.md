@@ -445,13 +445,15 @@ Datos:
 
 ## Pruebas de los modos con sensores parciales
 
-- [ ] Solo `HUMEDAD_SUELO`: con el valor bajo 35 % se crea un riego automático que llega en la respuesta de esa misma lectura.
-- [ ] Solo `TEMPERATURA` y `HUMEDAD_AIRE`: el dashboard muestra 2 tarjetas; el riego manual funciona y el automático no.
-- [ ] Un sensor deja de enviar: a los 2 min aparece "Sin datos" y su gráfica conserva el historial.
-- [ ] `HUMEDAD_SUELO` con valor 150: solo esa medición se descarta y la lectura responde 201.
-- [ ] Todas las mediciones inválidas: 422.
-- [ ] `tieneBomba` en falso: botón deshabilitado y `POST /riegos` responde 409.
-- [ ] Simulador sin confirmar: el comando pasa a `EXPIRADO` a los 2 min.
-- [ ] Historial de 24 h cargado con `medidaEn`: no se crean riegos ni alertas.
-- [ ] Reporte de IA con 1 sensor y con 4.
+La parte de la API está automatizada en `SensoresParcialesTest`, `RiegoTest` y `ReporteTest`. Lo que queda sin marcar depende del dashboard, de una key real de Gemini o del despliegue en Render.
+
+- [x] Solo `HUMEDAD_SUELO`: con el valor bajo 35 % se crea un riego automático que llega en la respuesta de esa misma lectura.
+- [ ] Solo `TEMPERATURA` y `HUMEDAD_AIRE`: el dashboard muestra 2 tarjetas; el riego manual funciona y el automático no. (API probada: 2 sensores y `riegoAutomaticoDisponible: false`; falta el dashboard.)
+- [ ] Un sensor deja de enviar: a los 2 min aparece "Sin datos" y su gráfica conserva el historial. (API probada: `SIN_DATOS` y la serie se conserva; falta el dashboard.)
+- [x] `HUMEDAD_SUELO` con valor 150: solo esa medición se descarta y la lectura responde 201.
+- [x] Todas las mediciones inválidas: 422.
+- [ ] `tieneBomba` en falso: botón deshabilitado y `POST /riegos` responde 409. (API probada: 409 `BOMBA_NO_DISPONIBLE`; falta el dashboard.)
+- [x] Simulador sin confirmar: el comando pasa a `EXPIRADO` a los 2 min.
+- [x] Historial de 24 h cargado con `medidaEn`: no se crean riegos ni alertas.
+- [ ] Reporte de IA con 1 sensor y con 4. (Probado con un modelo simulado; falta con `GEMINI_API_KEY`.)
 - [ ] `GET /salud` responde después de que Render se durmió.
