@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Layout } from './components/Layout';
 import { Login } from './components/Login';
 import { OverviewView } from './components/Overview/OverviewView';
+import { DevicesView } from './components/DevicesView';
 import { POTS_DATA } from './data/potsData';
 import type { PotData } from './data/potsData';
 import { useMaceta } from './hooks/useMaceta';
@@ -48,9 +49,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     setPotsList(prev => [...prev, newPot]);
     setSelectedPotId(newPot.id);
   };
+
   const potsActualizadas = potsList.map((pot) => (
     pot.id === '01' ? maceta01.pot ?? POT_01_LOADING : pot
   ));
+
   const macetaSeleccionada = potsActualizadas.find((pot) => pot.id === selectedPotId);
 
   return (
@@ -63,6 +66,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       onSelectPot={setSelectedPotId}
       onAddPot={handleAddPot}
     >
+      {/* VISTA OVERVIEW (VISTA GENERAL) */}
       {activeTab === 'overview' && (
         selectedPotId === '01' && !maceta01.pot ? (
           <div className="alert alert-dark border-secondary border-opacity-25 text-white" role="status">
@@ -86,11 +90,16 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         ) : null
       )}
 
-      {activeTab !== 'overview' && (
+      {/* VISTA DE GESTIÓN DE DISPOSITIVOS */}
+      {activeTab === 'devices' && (
+        <DevicesView potsList={potsActualizadas} onAddPot={handleAddPot} />
+      )}
+
+      {/* OTRAS VISTAS EN DESARROLLO */}
+      {activeTab !== 'overview' && activeTab !== 'devices' && (
         <div className="p-4 rounded-3 border border-secondary border-opacity-10" style={{ backgroundColor: '#131B2E' }}>
           <h4 className="fw-bold text-white mb-2">
-            {activeTab === 'devices' && 'Gestión de Dispositivos'}
-            {activeTab === 'analytics' && 'Analíticas y Telemetría'}
+            {activeTab === 'analytics' && 'Análisis'}
             {activeTab === 'alerts' && 'Centro de Alertas'}
             {activeTab === 'settings' && 'Configuración del Sistema'}
           </h4>
