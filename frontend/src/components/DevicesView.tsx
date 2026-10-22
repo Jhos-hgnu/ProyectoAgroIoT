@@ -235,7 +235,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </div>
             </div>
 
-            <div className="table-responsive flex-grow-1">
+            <div className="table-responsive grow">
               <table className="table table-dark table-hover align-middle mb-0" style={{ backgroundColor: 'transparent' }}>
                 <thead>
                   <tr className="text-secondary small border-bottom border-secondary border-opacity-25" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
