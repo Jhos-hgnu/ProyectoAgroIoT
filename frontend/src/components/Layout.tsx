@@ -39,6 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({
           onSelectPot={onSelectPot}
           potsList={potsList}
           onOpenAddPotModal={() => setIsAddPotModalOpen(true)}
+          onNavigate={(vista) => setActiveTab(vista)} // Pasa la redirección de notificaciones
         />
         <main
           className={`p-4 ${activeTab === 'devices' ? 'devices-main' : 'overflow-auto'}`}

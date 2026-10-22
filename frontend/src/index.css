@@ -20,6 +20,7 @@
   --input-text: #F8FAFC;
   --badge-bg: rgba(16, 185, 129, 0.2);
   --badge-text: #10B981;
+  --btn-close-filter: invert(1);
 }
 
 /* Tema Claro Invernadero */
@@ -36,6 +37,7 @@
   --input-text: #0F172A;
   --badge-bg: rgba(2, 132, 199, 0.15);
   --badge-text: #0284C7;
+  --btn-close-filter: none;
   --table-hover-bg: rgba(2, 132, 199, 0.08);
   --table-selected-bg: rgba(2, 132, 199, 0.12);
 }
@@ -54,6 +56,7 @@
   --input-text: #881337;
   --badge-bg: rgba(244, 114, 182, 0.2);
   --badge-text: #F472B6;
+  --btn-close-filter: none;
   --table-hover-bg: rgba(244, 114, 182, 0.1);
   --table-selected-bg: rgba(244, 114, 182, 0.16);
 }
@@ -195,6 +198,26 @@
 .analytics-view .analytics-pot-button:not(.is-active):hover,
 .analytics-view .analytics-range-button:not(.is-active):hover {
   border-color: var(--badge-text);
+}
+
+.notification-dropdown {
+  color: var(--text-primary);
+}
+
+.notification-item {
+  border-color: var(--border-color) !important;
+}
+
+.notification-item:hover {
+  border-color: var(--badge-text) !important;
+}
+
+.notification-mark-read {
+  color: var(--badge-text) !important;
+}
+
+.notification-dismiss {
+  filter: var(--btn-close-filter) !important;
 }
 
 /* Las vistas existentes aún contienen algunos colores oscuros en estilos inline. */

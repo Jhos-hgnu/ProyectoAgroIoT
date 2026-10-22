@@ -141,7 +141,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       )}
 
       {/* VISTA DE ANÁLISIS */}
-      {activeTab === "analytics" && (
+      {(activeTab === "analytics" || activeTab === "analiticas") && (
         <AnalyticsView
           potsList={potsActualizadas}
           selectedPotId={selectedPotId}
