@@ -9,6 +9,7 @@ import { useMaceta } from "./hooks/useMaceta";
 import { AlertsView } from "./components/AlertsView";
 import { SettingsView } from "./components/SettingsView";
 import type { UserProfile } from "./components/SettingsView";
+import { AnalyticsView } from "./components/AnalyticsView";
 
 const POT_01_LOADING: PotData = {
   ...POTS_DATA["01"],
@@ -123,7 +124,12 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* VISTA DE GESTIÓN DE DISPOSITIVOS */}
       {activeTab === "devices" && (
-        <DevicesView potsList={potsActualizadas} onAddPot={handleAddPot} />
+        <DevicesView
+          potsList={potsActualizadas}
+          onAddPot={handleAddPot}
+          selectedPotId={selectedPotId}
+          onSelectPot={setSelectedPotId}
+        />
       )}
 
       {/* VISTA DE CENTRO DE ALERTAS */}
@@ -134,25 +140,15 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <SettingsView currentTheme={theme} onThemeChange={setTheme} profile={profile} onProfileSave={setProfile} />
       )}
 
-      {/* OTRAS VISTAS EN DESARROLLO */}
-      {activeTab !== "overview" &&
-        activeTab !== "devices" &&
-        activeTab !== "alerts" &&
-        activeTab !== "settings" && (
-          <div
-            className="p-4 rounded-3 border border-secondary border-opacity-10"
-            style={{ backgroundColor: "#131B2E" }}
-          >
-            <h4 className="fw-bold text-white mb-2">Análisis</h4>
-            <p
-              className="text-secondary mb-0"
-              style={{ color: "#94A3B8", fontSize: "14px" }}
-            >
-              Esta sección se puede construir según los requerimientos
-              específicos.
-            </p>
-          </div>
-        )}
+      {/* VISTA DE ANÁLISIS */}
+      {activeTab === "analytics" && (
+        <AnalyticsView
+          potsList={potsActualizadas}
+          selectedPotId={selectedPotId}
+          onSelectPot={setSelectedPotId}
+        />
+      )}
+
     </Layout>
   );
 }

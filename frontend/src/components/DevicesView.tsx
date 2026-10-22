@@ -4,10 +4,11 @@ import type { PotData } from '../data/potsData';
 interface DevicesViewProps {
   potsList: PotData[];
   onAddPot: (newPot: PotData) => void;
+  selectedPotId: string;
+  onSelectPot: (potId: string) => void;
 }
 
-export function DevicesView({ potsList }: DevicesViewProps) {
-  const [selectedPotId, setSelectedPotId] = useState<string>(potsList[0]?.id || '01');
+export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesViewProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ONLINE' | 'OFFLINE'>('ALL');
   const [flashLed, setFlashLed] = useState(false);
@@ -35,9 +36,9 @@ export function DevicesView({ potsList }: DevicesViewProps) {
   const onlineNodes = potsList.filter((p) => !p.isLoading).length;
 
   return (
-    <div className="d-flex flex-column gap-3 text-white">
+    <div className="devices-view d-flex flex-column gap-3 text-white">
       {/* ENCABEZADO CON TÍTULO Y BUSCADOR/FILTROS INTEGRADOS A LA DERECHA */}
-      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2">
+      <div className="devices-header d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2">
         <div>
           <h3 className="fw-bold text-white mb-1">Gestión de Dispositivos</h3>
           <p className="text-secondary mb-0" style={{ color: '#94a3b8', fontSize: '14px' }}>
@@ -125,10 +126,10 @@ export function DevicesView({ potsList }: DevicesViewProps) {
       </div>
 
       {/* 1. WIDGETS SUPERIORES */}
-      <div className="row g-3">
+      <div className="devices-widgets row g-3">
         {/* Widget 1: Nodos Registrados */}
         <div className="col-12 col-md-3">
-          <div className="p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
+          <div className="device-widget-card p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
             <div className="d-flex align-items-center justify-content-between mb-2">
               <div className="d-flex align-items-center gap-2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white opacity-75">
@@ -148,7 +149,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </svg>
             </div>
             <div className="fs-3 fw-bold text-white mb-2">{totalNodes} Nodos</div>
-            <div className="pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
+            <div className="device-widget-footer pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
               {onlineNodes} En línea • {totalNodes - onlineNodes} Offline
             </div>
           </div>
@@ -156,7 +157,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
 
         {/* Widget 2: Señal Mesh */}
         <div className="col-12 col-md-3">
-          <div className="p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
+          <div className="device-widget-card p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
             <div className="d-flex align-items-center justify-content-between mb-2">
               <div className="d-flex align-items-center gap-2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white opacity-75">
@@ -173,7 +174,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </svg>
             </div>
             <div className="fs-3 fw-bold text-white mb-2">-62 dBm</div>
-            <div className="pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
+            <div className="device-widget-footer pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
               Latencia: 42ms (Óptima)
             </div>
           </div>
@@ -181,7 +182,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
 
         {/* Widget 3: Firmware Flota (Cambiado de amarillo a Cian/Azul) */}
         <div className="col-12 col-md-3">
-          <div className="p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
+          <div className="device-widget-card p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
             <div className="d-flex align-items-center justify-content-between mb-2">
               <div className="d-flex align-items-center gap-2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white opacity-75">
@@ -197,7 +198,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </svg>
             </div>
             <div className="fs-3 fw-bold text-white mb-2">v1.2.0</div>
-            <div className="pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
+            <div className="device-widget-footer pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
               Estado: Sincronizado
             </div>
           </div>
@@ -205,7 +206,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
 
         {/* Widget 4: Firebase RTDB */}
         <div className="col-12 col-md-3">
-          <div className="p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
+          <div className="device-widget-card p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
             <div className="d-flex align-items-center justify-content-between mb-2">
               <div className="d-flex align-items-center gap-2">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white opacity-75">
@@ -221,7 +222,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </div>
             </div>
             <div className="fs-3 fw-bold text-white mb-2">120 ms</div>
-            <div className="pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
+            <div className="device-widget-footer pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
               Websockets: Conectado
             </div>
           </div>
@@ -229,10 +230,10 @@ export function DevicesView({ potsList }: DevicesViewProps) {
       </div>
 
       {/* 2. INVENTARIO & INSPECTOR */}
-      <div className="row g-4 align-items-stretch mt-1">
+      <div className="devices-lower-row row g-4 align-items-stretch mt-1">
         {/* TABLA DE INVENTARIO HARDWARE (IZQUIERDA) */}
         <div className="col-12 col-lg-7 d-flex flex-column">
-          <div className="p-4 rounded-3 border border-secondary border-opacity-10 h-100 d-flex flex-column" style={{ backgroundColor: '#131B2E', minHeight: '380px' }}>
+          <div className="inventory-panel p-4 rounded-3 border border-secondary border-opacity-10 h-100 d-flex flex-column" style={{ backgroundColor: '#131B2E', minHeight: '380px' }}>
             <div className="d-flex align-items-center gap-3 mb-4 pb-2 border-bottom border-secondary border-opacity-25">
               <div className="p-2 rounded-2 border border-white border-opacity-25 d-flex align-items-center justify-content-center">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
@@ -247,7 +248,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </div>
             </div>
 
-            <div className="table-responsive grow">
+            <div className="table-responsive inventory-table-scroll">
               <table className="table table-dark table-hover inventory-table align-middle mb-0" style={{ backgroundColor: 'transparent' }}>
                 <thead>
                   <tr className="text-secondary small border-bottom border-secondary border-opacity-25" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
@@ -265,7 +266,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                     return (
                       <tr
                         key={pot.id}
-                        onClick={() => setSelectedPotId(pot.id)}
+                        onClick={() => onSelectPot(pot.id)}
                         style={{ cursor: 'pointer', backgroundColor: isSelected ? '#1E293B' : 'transparent' }}
                         className={`border-bottom border-secondary border-opacity-10${isSelected ? ' inventory-row-selected' : ''}`}
                       >
@@ -317,7 +318,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
         {/* PANEL INSPECTOR MACETA (DERECHA) */}
         <div className="col-12 col-lg-5 d-flex flex-column">
           {selectedPot ? (
-            <div className="p-4 rounded-3 border border-secondary border-opacity-10 h-100 d-flex flex-column justify-content-between" style={{ backgroundColor: '#131B2E', minHeight: '380px' }}>
+            <div className="p-4 rounded-3 border border-secondary border-opacity-10 h-100 d-flex flex-column gap-3" style={{ backgroundColor: '#131B2E', minHeight: '380px' }}>
               
               {/* ENCABEZADO */}
               <div className="d-flex justify-content-between align-items-center pb-3 border-bottom border-secondary border-opacity-25">
@@ -338,7 +339,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </div>
 
               {/* IDENTIFICACIÓN FÍSICA EN INVERNADERO */}
-              <div className="my-2">
+              <div>
                 <label className="form-label text-secondary small fw-bold text-uppercase d-block mb-1" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
                   IDENTIFICACIÓN FÍSICA EN INVERNADERO
                 </label>

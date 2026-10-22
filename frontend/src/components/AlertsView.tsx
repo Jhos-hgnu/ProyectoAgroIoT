@@ -25,46 +25,10 @@ interface AlertsViewProps {
 }
 
 export function AlertsView({ potsList }: AlertsViewProps) {
-  const [alerts, setAlerts] = useState<AlertItem[]>([
-    {
-      id: "alt-1",
-      potId: "03",
-      potName:
-        potsList.find((p) => p.id === "03")?.name ||
-        "Maceta 03 — Pimientos Dulces",
-      type: "deficit",
-      title: "Déficit Hídrico Detectado",
-      description:
-        "La humedad del sustrato bajó al 38%. Se recomienda activar el riego programado.",
-      timestamp: "Hace 6 minutos",
-      resolved: false,
-      metricInfo: {
-        label: "Humedad Sustrato",
-        value: "38%",
-        target: "Umbral: 50%",
-      },
-      suggestedAction: { label: "Ejecutar Riego (150ml)" },
-    },
-    {
-      id: "alt-2",
-      potId: "02",
-      potName:
-        potsList.find((p) => p.id === "02")?.name ||
-        "Maceta 02 — Albahaca Italiana",
-      type: "temp",
-      title: "Variación de Temperatura",
-      description:
-        "La temperatura en el microclima registró 26.8°C durante la última lectura.",
-      timestamp: "Hace 35 minutos",
-      resolved: false,
-      metricInfo: {
-        label: "Temp. Aire",
-        value: "26.8 °C",
-        target: "Máx: 25.0 °C",
-      },
-      suggestedAction: { label: "Activar Ventilación" },
-    },
-    {
+  const [resolvedAlertIds, setResolvedAlertIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const historicalAlerts: AlertItem[] = [{
       id: "alt-3",
       potId: "01",
       potName:
@@ -77,19 +41,61 @@ export function AlertsView({ potsList }: AlertsViewProps) {
       timestamp: "Hace 2 horas",
       resolved: true,
       metricInfo: { label: "Humedad Sustrato", value: "72%", target: "Óptimo" },
-    },
-  ]);
-
+  }];
   const [filter, setFilter] = useState<"all" | "active" | "resolved">("active");
   const [soilThreshold, setSoilThreshold] = useState<number>(45);
   const [tempThreshold, setTempThreshold] = useState<number>(30);
   const [telegramNotif, setTelegramNotif] = useState<boolean>(true);
   const [webNotif, setWebNotif] = useState<boolean>(true);
 
+  const currentAlerts = potsList.flatMap((pot): AlertItem[] => {
+    if (pot.isLoading) return [];
+
+    const alertsForPot: AlertItem[] = [];
+    if (pot.soilMoisture !== null && pot.soilMoisture < soilThreshold) {
+      alertsForPot.push({
+        id: `${pot.id}-soil-low`,
+        potId: pot.id,
+        potName: pot.name,
+        type: "deficit",
+        title: "Déficit Hídrico Detectado",
+        description: `La humedad del sustrato bajó al ${pot.soilMoisture}%. Se recomienda activar el riego programado.`,
+        timestamp: "Ahora",
+        resolved: resolvedAlertIds.has(`${pot.id}-soil-low`),
+        metricInfo: {
+          label: "Humedad Sustrato",
+          value: `${pot.soilMoisture}%`,
+          target: `Umbral: ${soilThreshold}%`,
+        },
+        suggestedAction: { label: "Ejecutar Riego (150ml)" },
+      });
+    }
+
+    if (pot.airTemp !== null && pot.airTemp > tempThreshold) {
+      alertsForPot.push({
+        id: `${pot.id}-temp-high`,
+        potId: pot.id,
+        potName: pot.name,
+        type: "temp",
+        title: "Variación de Temperatura",
+        description: `La temperatura del microclima alcanzó ${pot.airTemp}°C.`,
+        timestamp: "Ahora",
+        resolved: resolvedAlertIds.has(`${pot.id}-temp-high`),
+        metricInfo: {
+          label: "Temp. Aire",
+          value: `${pot.airTemp} °C`,
+          target: `Máx: ${tempThreshold} °C`,
+        },
+        suggestedAction: { label: "Activar Ventilación" },
+      });
+    }
+
+    return alertsForPot;
+  });
+  const alerts = [...historicalAlerts, ...currentAlerts];
+
   const handleResolve = (id: string) => {
-    setAlerts((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, resolved: true } : a)),
-    );
+    setResolvedAlertIds((previous) => new Set(previous).add(id));
   };
 
   const handleTriggerAction = (alert: AlertItem) => {
@@ -128,7 +134,7 @@ export function AlertsView({ potsList }: AlertsViewProps) {
         {/* Widget 1: Incidentes Activos */}
         <div className="col-12 col-md-4">
           <div
-            className="p-3 rounded-4 cursor-pointer transition-all"
+            className="alert-summary-widget p-3 rounded-4 cursor-pointer transition-all"
             style={{
               backgroundColor: "#131B2E",
               cursor: "pointer",
@@ -183,11 +189,8 @@ export function AlertsView({ potsList }: AlertsViewProps) {
             </div>
 
             <div
-              className="pt-2 mt-2 border-top d-flex justify-content-between text-secondary"
-              style={{
-                borderColor: "rgba(255, 255, 255, 0.05)",
-                fontSize: "13px",
-              }}
+              className="pt-2 mt-2 border-top border-secondary border-opacity-25 d-flex justify-content-between text-secondary"
+              style={{ fontSize: "13px" }}
             >
               <span>Estado: En Monitoreo</span>
               <span>Urgencia: Media</span>
@@ -198,7 +201,7 @@ export function AlertsView({ potsList }: AlertsViewProps) {
         {/* Widget 2: Eventos Hoy */}
         <div className="col-12 col-md-4">
           <div
-            className="p-3 rounded-4 cursor-pointer transition-all"
+            className="alert-summary-widget p-3 rounded-4 cursor-pointer transition-all"
             style={{
               backgroundColor: "#131B2E",
               cursor: "pointer",
@@ -250,11 +253,8 @@ export function AlertsView({ potsList }: AlertsViewProps) {
             </div>
 
             <div
-              className="pt-2 mt-2 border-top d-flex justify-content-between text-secondary"
-              style={{
-                borderColor: "rgba(255, 255, 255, 0.05)",
-                fontSize: "13px",
-              }}
+              className="pt-2 mt-2 border-top border-secondary border-opacity-25 d-flex justify-content-between text-secondary"
+              style={{ fontSize: "13px" }}
             >
               <span>Canal: ESP32 Mesh</span>
               <span>Sincro: RTDB</span>
@@ -265,7 +265,7 @@ export function AlertsView({ potsList }: AlertsViewProps) {
         {/* Widget 3: Resueltas */}
         <div className="col-12 col-md-4">
           <div
-            className="p-3 rounded-4 cursor-pointer transition-all"
+            className="alert-summary-widget p-3 rounded-4 cursor-pointer transition-all"
             style={{
               backgroundColor: "#131B2E",
               cursor: "pointer",
@@ -317,11 +317,8 @@ export function AlertsView({ potsList }: AlertsViewProps) {
             </div>
 
             <div
-              className="pt-2 mt-2 border-top d-flex justify-content-between text-secondary"
-              style={{
-                borderColor: "rgba(255, 255, 255, 0.05)",
-                fontSize: "13px",
-              }}
+              className="pt-2 mt-2 border-top border-secondary border-opacity-25 d-flex justify-content-between text-secondary"
+              style={{ fontSize: "13px" }}
             >
               <span>Resolución: Manual/Auto</span>
               <span>Histórico: OK</span>
