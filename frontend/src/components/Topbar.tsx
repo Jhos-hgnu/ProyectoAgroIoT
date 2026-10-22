@@ -20,39 +20,56 @@ export const Topbar: React.FC<TopbarProps> = ({
 
   return (
     <header 
-      className="px-4 py-2 d-flex align-items-center justify-content-between sticky-top border-bottom border-secondary border-opacity-10 w-100" 
-      style={{ height: '68px', zIndex: 1010, backgroundColor: '#0F172A' }}
+      className="px-4 py-2 d-flex align-items-center justify-content-between sticky-top border-bottom w-100" 
+      style={{ 
+        height: '68px', 
+        zIndex: 1010, 
+        backgroundColor: 'var(--bg-topbar)', 
+        borderColor: 'var(--border-color)',
+        transition: 'all 0.3s ease' 
+      }}
     >
       {/* SELECTOR DE MACETA, NOTIFICACIÓN Y BOTÓN AGREGAR */}
       <div className="d-flex align-items-center gap-3 ms-auto">
         <div className="position-relative">
           <button 
-            className="btn rounded-pill d-flex align-items-center gap-2.5 px-3 py-2 text-white border-0"
+            className="btn rounded-pill d-flex align-items-center gap-2.5 px-3 py-2 border-0"
             onClick={() => setIsOpen(!isOpen)}
-            style={{ backgroundColor: '#1E293B', border: '1px solid rgba(255, 255, 255, 0.1)', fontSize: '13px' }}
+            style={{ 
+              backgroundColor: 'var(--bg-card)', 
+              border: '1px solid var(--border-color)', 
+              fontSize: '13px',
+              color: 'var(--text-primary)'
+            }}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 10v10M12 10a4 4 0 0 1 4-4h3v3a4 4 0 0 1-4 4h-3zM12 14a4 4 0 0 0-4-4H5v3a4 4 0 0 0 4 4h3z"/>
             </svg>
             <span className="fw-medium">{currentPot?.name || 'Seleccionar Maceta'}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2" className="ms-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="ms-1 opacity-75">
               <path d="m6 9 6 6 6-6"/>
             </svg>
           </button>
 
           {isOpen && (
             <div 
-              className="position-absolute mt-2 rounded-3 shadow-lg border border-secondary border-opacity-10 py-1"
-              style={{ backgroundColor: '#1E293B', minWidth: '240px', zIndex: 1050, right: 0 }}
+              className="position-absolute mt-2 rounded-3 shadow-lg border py-1"
+              style={{ 
+                backgroundColor: 'var(--bg-card)', 
+                borderColor: 'var(--border-color)', 
+                minWidth: '240px', 
+                zIndex: 1050, 
+                right: 0 
+              }}
             >
               {potsList.map((pot) => (
                 <button
                   key={pot.id}
-                  className="w-100 text-start btn text-white border-0 px-3 py-2 d-flex align-items-center gap-2"
+                  className="w-100 text-start btn border-0 px-3 py-2 d-flex align-items-center gap-2"
                   style={{ 
                     fontSize: '13px', 
                     backgroundColor: selectedPotId === pot.id ? 'rgba(16, 185, 129, 0.15)' : 'transparent', 
-                    color: selectedPotId === pot.id ? '#10B981' : '#FFFFFF' 
+                    color: selectedPotId === pot.id ? '#10B981' : 'var(--text-primary)' 
                   }}
                   onClick={() => {
                     onSelectPot(pot.id);
@@ -70,7 +87,13 @@ export const Topbar: React.FC<TopbarProps> = ({
         {/* NOTIFICACIONES */}
         <button 
           className="btn btn-sm position-relative rounded-circle d-flex align-items-center justify-content-center border-0" 
-          style={{ backgroundColor: '#1E293B', width: '38px', height: '38px', color: '#F8FAFC' }}
+          style={{ 
+            backgroundColor: 'var(--bg-card)', 
+            border: '1px solid var(--border-color)', 
+            width: '38px', 
+            height: '38px', 
+            color: 'var(--text-primary)' 
+          }}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
           <span 

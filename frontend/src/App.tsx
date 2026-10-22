@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Layout } from "./components/Layout";
 import { Login } from "./components/Login";
 import { OverviewView } from "./components/Overview/OverviewView";
@@ -7,6 +7,7 @@ import { POTS_DATA } from "./data/potsData";
 import type { PotData } from "./data/potsData";
 import { useMaceta } from "./hooks/useMaceta";
 import { AlertsView } from "./components/AlertsView";
+import { SettingsView } from "./components/SettingsView";
 
 const POT_01_LOADING: PotData = {
   ...POTS_DATA["01"],
@@ -46,6 +47,17 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [selectedPotId, setSelectedPotId] = useState("01");
   const maceta01 = useMaceta();
 
+  // Estado global para el tema seleccionado
+  const [theme, setTheme] = useState<'dark' | 'light' | 'coquette'>(() => {
+    return (localStorage.getItem('agrolot-theme') as 'dark' | 'light' | 'coquette') || 'dark';
+  });
+
+  // Aplicar atributo data-theme global en la etiqueta html al cambiar
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('agrolot-theme', theme);
+  }, [theme]);
+
   const handleAddPot = (newPot: PotData) => {
     setPotsList((prev) => [...prev, newPot]);
     setSelectedPotId(newPot.id);
@@ -69,7 +81,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       onSelectPot={setSelectedPotId}
       onAddPot={handleAddPot}
     >
-      {/* VISTA OVERVIEW (VISTA GENERAL) */}
+      {/* VISTA OVERVIEW */}
       {activeTab === "overview" &&
         (selectedPotId === "01" && !maceta01.pot ? (
           <div
@@ -111,18 +123,21 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       {/* VISTA DE CENTRO DE ALERTAS */}
       {activeTab === "alerts" && <AlertsView potsList={potsActualizadas} />}
 
-      {/* VISTAS RESTANTES EN DESARROLLO */}
+      {/* VISTA DE CONFIGURACIÓN CON PROPS DE TEMA */}
+      {activeTab === "settings" && (
+        <SettingsView currentTheme={theme} onThemeChange={setTheme} />
+      )}
+
+      {/* OTRAS VISTAS EN DESARROLLO */}
       {activeTab !== "overview" &&
         activeTab !== "devices" &&
-        activeTab !== "alerts" && (
+        activeTab !== "alerts" &&
+        activeTab !== "settings" && (
           <div
             className="p-4 rounded-3 border border-secondary border-opacity-10"
             style={{ backgroundColor: "#131B2E" }}
           >
-            <h4 className="fw-bold text-white mb-2">
-              {activeTab === "analytics" && "Análisis"}
-              {activeTab === "settings" && "Configuración del Sistema"}
-            </h4>
+            <h4 className="fw-bold text-white mb-2">Análisis</h4>
             <p
               className="text-secondary mb-0"
               style={{ color: "#94A3B8", fontSize: "14px" }}

@@ -4,19 +4,98 @@
 @import "bootstrap/dist/css/bootstrap.min.css";
 @import "bootstrap-icons/font/bootstrap-icons.css";
 
-:root {
+/* 1. PALETAS DE COLOR DINÁMICAS GLOBALES */
+
+/* Tema Oscuro Esmeralda (Predeterminado) */
+:root, [data-theme='dark'] {
   color-scheme: dark;
+  --bg-app: #0F172A;
+  --bg-card: #131B2E;
+  --bg-sidebar: #0F172A;
+  --bg-topbar: #0F172A;
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --input-bg: rgba(255, 255, 255, 0.05);
+  --input-text: #F8FAFC;
+  --badge-bg: rgba(16, 185, 129, 0.2);
+  --badge-text: #10B981;
 }
+
+/* Tema Claro Invernadero */
+[data-theme='light'] {
+  color-scheme: light;
+  --bg-app: #F8FAFC;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #F1F5F9;
+  --bg-topbar: #F1F5F9;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --input-bg: rgba(0, 0, 0, 0.04);
+  --input-text: #0F172A;
+  --badge-bg: rgba(2, 132, 199, 0.15);
+  --badge-text: #0284C7;
+}
+
+/* Tema Rosado Coquette 🎀 */
+[data-theme='coquette'] {
+  color-scheme: light;
+  --bg-app: #FFF1F2;
+  --bg-card: #FFFFFF;
+  --bg-sidebar: #FFE4E6;
+  --bg-topbar: #FFE4E6;
+  --text-primary: #881337;
+  --text-secondary: #9F1239;
+  --border-color: rgba(244, 114, 182, 0.3);
+  --input-bg: rgba(244, 114, 182, 0.1);
+  --input-text: #881337;
+  --badge-bg: rgba(244, 114, 182, 0.2);
+  --badge-text: #F472B6;
+}
+
+/* 2. REGLAS QUE TRANSFORMAN LA WEB COMPLETA */
 
 body {
   margin: 0;
-  background-color: #0F172A;
-  color: #F8FAFC;
+  background-color: var(--bg-app) !important;
+  color: var(--text-primary) !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Títulos, encabezados y textos globales */
+h1, h2, h3, h4, h5, h6, .text-white {
+  color: var(--text-primary) !important;
+}
+
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Campos de entrada (Inputs y Selects) */
+.form-control, .form-select {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.form-control:focus, .form-select:focus {
+  background-color: var(--input-bg) !important;
+  color: var(--input-text) !important;
+  box-shadow: none !important;
+}
+
+/* Opciones desplegables dentro de select */
+.form-select option {
+  background-color: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Placeholders */
 .custom-search-input::placeholder,
-.custom-login-input::placeholder {
-  color: #94A3B8 !important;
-  opacity: 1;
+.custom-login-input::placeholder,
+.form-control::placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 0.8;
 }

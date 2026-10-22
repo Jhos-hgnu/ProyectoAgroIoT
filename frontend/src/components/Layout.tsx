@@ -28,9 +28,9 @@ export const Layout: React.FC<LayoutProps> = ({
   const [isAddPotModalOpen, setIsAddPotModalOpen] = useState(false);
 
   return (
-    <div className="d-flex min-vh-100 w-100 text-white" style={{ backgroundColor: '#0F172A' }}>
+    <div className="d-flex min-vh-100 w-100" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)', transition: 'background-color 0.3s ease' }}>
       <Sidebar onLogout={onLogout} activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="d-flex flex-column min-w-0" style={{ flex: 1, backgroundColor: '#0F172A', width: '100%' }}>
+      <div className="d-flex flex-column min-w-0" style={{ flex: 1, backgroundColor: 'var(--bg-app)', width: '100%', transition: 'background-color 0.3s ease' }}>
         <Topbar 
           selectedPotId={selectedPotId}
           onSelectPot={onSelectPot}
