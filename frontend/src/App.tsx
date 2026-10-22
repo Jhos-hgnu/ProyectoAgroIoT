@@ -8,6 +8,7 @@ import type { PotData } from "./data/potsData";
 import { useMaceta } from "./hooks/useMaceta";
 import { AlertsView } from "./components/AlertsView";
 import { SettingsView } from "./components/SettingsView";
+import type { UserProfile } from "./components/SettingsView";
 
 const POT_01_LOADING: PotData = {
   ...POTS_DATA["01"],
@@ -45,6 +46,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [potsList, setPotsList] = useState<PotData[]>(Object.values(POTS_DATA));
   const [selectedPotId, setSelectedPotId] = useState("01");
+  const [profile, setProfile] = useState<UserProfile>({
+    name: 'Elena R.',
+    role: 'Ing. Agrónoma',
+  });
   const maceta01 = useMaceta();
 
   // Estado global para el tema seleccionado
@@ -80,6 +85,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       selectedPotId={selectedPotId}
       onSelectPot={setSelectedPotId}
       onAddPot={handleAddPot}
+      profile={profile}
     >
       {/* VISTA OVERVIEW */}
       {activeTab === "overview" &&
@@ -125,7 +131,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* VISTA DE CONFIGURACIÓN CON PROPS DE TEMA */}
       {activeTab === "settings" && (
-        <SettingsView currentTheme={theme} onThemeChange={setTheme} />
+        <SettingsView currentTheme={theme} onThemeChange={setTheme} profile={profile} onProfileSave={setProfile} />
       )}
 
       {/* OTRAS VISTAS EN DESARROLLO */}

@@ -49,14 +49,14 @@ export function DevicesView({ potsList }: DevicesViewProps) {
         <div className="d-flex flex-wrap align-items-center gap-2">
           <div className="position-relative" style={{ width: '280px' }}>
             <span className="position-absolute top-50 start-0 translate-middle-y ms-3 d-flex align-items-center pointer-events-none">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-secondary" style={{ opacity: 0.9 }}>
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </span>
             <style>{`
               .custom-search-input::placeholder {
-                color: #FFFFFF !important;
+                color: var(--text-secondary) !important;
                 opacity: 0.8 !important;
               }
             `}</style>
@@ -69,7 +69,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                 borderRadius: '20px',
                 fontSize: '13px',
                 height: '36px',
-                color: '#FFFFFF',
+                color: 'var(--input-text)',
               }}
               placeholder="Buscar maceta, cultivo o ID..."
               value={searchTerm}
@@ -248,7 +248,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
             </div>
 
             <div className="table-responsive grow">
-              <table className="table table-dark table-hover align-middle mb-0" style={{ backgroundColor: 'transparent' }}>
+              <table className="table table-dark table-hover inventory-table align-middle mb-0" style={{ backgroundColor: 'transparent' }}>
                 <thead>
                   <tr className="text-secondary small border-bottom border-secondary border-opacity-25" style={{ fontSize: '11px', letterSpacing: '0.5px' }}>
                     <th className="bg-transparent border-0">DISPOSITIVO / SOC</th>
@@ -267,7 +267,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                         key={pot.id}
                         onClick={() => setSelectedPotId(pot.id)}
                         style={{ cursor: 'pointer', backgroundColor: isSelected ? '#1E293B' : 'transparent' }}
-                        className="border-bottom border-secondary border-opacity-10"
+                        className={`border-bottom border-secondary border-opacity-10${isSelected ? ' inventory-row-selected' : ''}`}
                       >
                         <td className="bg-transparent border-0 py-3">
                           <div className="fw-bold text-white" style={{ fontSize: '14px' }}>{pot.name}</div>
@@ -382,7 +382,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                   {!isEditingCalibration ? (
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-light py-1 px-3"
+                      className="btn btn-sm btn-outline-light calibration-edit-button py-1 px-3"
                       style={{ fontSize: '11px', borderRadius: '6px' }}
                       onClick={() => setIsEditingCalibration(true)}
                     >
@@ -391,7 +391,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                   ) : (
                     <button
                       type="button"
-                      className="btn btn-sm btn-success py-1 px-3"
+                      className="btn btn-sm btn-success calibration-edit-button py-1 px-3"
                       style={{ fontSize: '11px', borderRadius: '6px' }}
                       onClick={() => setIsEditingCalibration(false)}
                     >

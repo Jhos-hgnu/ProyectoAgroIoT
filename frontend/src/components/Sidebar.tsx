@@ -1,12 +1,14 @@
 import React from 'react';
+import type { UserProfile } from './SettingsView';
 
 interface SidebarProps {
   onLogout: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  profile: UserProfile;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActiveTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActiveTab, profile }) => {
   return (
     <aside 
       className="d-flex flex-column justify-content-between p-3 border-end sticky-top" 
@@ -77,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
         <nav className="d-flex flex-column gap-1.5">
           {/* Vista General */}
           <button 
-            className="btn text-start border-0 fw-medium d-flex align-items-center gap-3 px-3 py-2.5 rounded-3 shadow-sm"
+            className="btn text-start border-0 fw-medium d-flex align-items-center gap-3 px-3 py-2.5 rounded-3"
             onClick={() => setActiveTab('overview')}
             style={{ 
               backgroundColor: activeTab === 'overview' ? '#10B981' : 'transparent', 
@@ -90,7 +92,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
 
           {/* Dispositivos */}
           <button 
-            className="btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3" 
+            className="btn border-0 text-start fw-medium d-flex align-items-center gap-3 px-3 py-2.5 rounded-3"
             onClick={() => setActiveTab('devices')}
             style={{ 
               backgroundColor: activeTab === 'devices' ? '#10B981' : 'transparent', 
@@ -103,7 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
 
           {/* Analíticas */}
           <button 
-            className="btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3" 
+            className="btn border-0 text-start fw-medium d-flex align-items-center gap-3 px-3 py-2.5 rounded-3"
             onClick={() => setActiveTab('analytics')}
             style={{ 
               backgroundColor: activeTab === 'analytics' ? '#10B981' : 'transparent', 
@@ -116,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
 
           {/* Alertas */}
           <button 
-            className="btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3" 
+            className="btn border-0 text-start fw-medium d-flex align-items-center gap-3 px-3 py-2.5 rounded-3"
             onClick={() => setActiveTab('alerts')}
             style={{ 
               backgroundColor: activeTab === 'alerts' ? '#10B981' : 'transparent', 
@@ -129,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
 
           {/* Configuración */}
           <button 
-            className="btn border-0 text-start d-flex align-items-center gap-3 px-3 py-2.5 rounded-3" 
+            className="btn border-0 text-start fw-medium d-flex align-items-center gap-3 px-3 py-2.5 rounded-3"
             onClick={() => setActiveTab('settings')}
             style={{ 
               backgroundColor: activeTab === 'settings' ? '#10B981' : 'transparent', 
@@ -146,14 +148,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
       <div className="pt-3 d-flex align-items-center justify-content-between" style={{ borderTop: '1px solid var(--border-color)' }}>
         <div className="d-flex align-items-center gap-3">
           <div 
-            className="rounded-circle text-dark fw-bold d-flex align-items-center justify-content-center shadow-sm" 
-            style={{ width: '36px', height: '36px', fontSize: '12px', backgroundColor: '#10B981' }}
+            className="rounded-circle fw-bold d-flex align-items-center justify-content-center shadow-sm"
+            style={{ width: '36px', height: '36px', fontSize: '12px', backgroundColor: 'var(--badge-bg)', color: 'var(--badge-text)' }}
           >
-            ER
+            {profile.name
+              .split(' ')
+              .map((part) => part[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()}
           </div>
           <div>
-            <div className="fw-semibold leading-tight" style={{ fontSize: '13px' }}>Elena R.</div>
-            <div className="text-secondary" style={{ fontSize: '11px' }}>Ing. Agrónoma</div>
+            <div className="fw-semibold leading-tight" style={{ fontSize: '13px' }}>{profile.name}</div>
+            <div className="text-secondary" style={{ fontSize: '11px' }}>{profile.role}</div>
           </div>
         </div>
 

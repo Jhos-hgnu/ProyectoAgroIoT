@@ -31,11 +31,13 @@
   --bg-topbar: #F1F5F9;
   --text-primary: #0F172A;
   --text-secondary: #475569;
-  --border-color: rgba(0, 0, 0, 0.1);
+  --border-color: #D1D5DB;
   --input-bg: rgba(0, 0, 0, 0.04);
   --input-text: #0F172A;
   --badge-bg: rgba(2, 132, 199, 0.15);
   --badge-text: #0284C7;
+  --table-hover-bg: rgba(2, 132, 199, 0.08);
+  --table-selected-bg: rgba(2, 132, 199, 0.12);
 }
 
 /* Tema Rosado Coquette 🎀 */
@@ -52,6 +54,104 @@
   --input-text: #881337;
   --badge-bg: rgba(244, 114, 182, 0.2);
   --badge-text: #F472B6;
+  --table-hover-bg: rgba(244, 114, 182, 0.1);
+  --table-selected-bg: rgba(244, 114, 182, 0.16);
+}
+
+[data-theme='light'] .inventory-table.table-dark,
+[data-theme='coquette'] .inventory-table.table-dark {
+  --bs-table-color: var(--text-primary);
+  --bs-table-bg: transparent;
+  --bs-table-hover-color: var(--text-primary);
+  --bs-table-hover-bg: var(--table-hover-bg);
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .inventory-table.table-dark > :not(caption) > * > *,
+[data-theme='coquette'] .inventory-table.table-dark > :not(caption) > * > * {
+  color: var(--text-primary);
+}
+
+[data-theme='light'] .inventory-table .inventory-row-selected > *,
+[data-theme='coquette'] .inventory-table .inventory-row-selected > * {
+  background-color: var(--table-selected-bg) !important;
+}
+
+[data-theme='light'] button[style*="rgb(16, 185, 129)"],
+[data-theme='light'] button[style*="rgb(2, 132, 199)"],
+[data-theme='coquette'] button[style*="rgb(16, 185, 129)"],
+[data-theme='coquette'] button[style*="rgb(2, 132, 199)"] {
+  background-color: var(--badge-bg) !important;
+  border-color: var(--badge-bg) !important;
+  color: var(--badge-text) !important;
+}
+
+[data-theme='light'] .calibration-edit-button,
+[data-theme='coquette'] .calibration-edit-button {
+  background-color: var(--badge-bg) !important;
+  border-color: var(--badge-text) !important;
+  color: var(--badge-text) !important;
+}
+
+/* Las vistas existentes aún contienen algunos colores oscuros en estilos inline. */
+[data-theme='light'] .border-secondary {
+  border-color: #D1D5DB !important;
+}
+
+[data-theme='light'] .p-3.rounded-3:not([style*="border:"]),
+[data-theme='light'] .p-3.rounded-4:not([style*="border:"]),
+[data-theme='light'] .p-4.rounded-3:not([style*="border:"]),
+[data-theme='light'] .p-4.rounded-4:not([style*="border:"]) {
+  border: 1px solid #D1D5DB !important;
+}
+
+[data-theme='light'] [style*="border: none"] {
+  border: 1px solid #D1D5DB !important;
+}
+
+[data-theme='light'] [style*="rgb(15, 23, 42)"],
+[data-theme='coquette'] [style*="rgb(15, 23, 42)"] {
+  background-color: var(--bg-app) !important;
+}
+
+[data-theme='light'] [style*="rgb(19, 27, 46)"],
+[data-theme='coquette'] [style*="rgb(19, 27, 46)"] {
+  background-color: var(--bg-card) !important;
+}
+
+[data-theme='light'] [style*="rgb(13, 21, 39)"],
+[data-theme='light'] [style*="rgb(10, 15, 29)"],
+[data-theme='light'] [style*="rgb(30, 41, 59)"],
+[data-theme='coquette'] [style*="rgb(13, 21, 39)"],
+[data-theme='coquette'] [style*="rgb(10, 15, 29)"],
+[data-theme='coquette'] [style*="rgb(30, 41, 59)"] {
+  background-color: var(--input-bg) !important;
+}
+
+[data-theme='light'] [style*="background-color: rgba(255, 255, 255"],
+[data-theme='coquette'] [style*="background-color: rgba(255, 255, 255"] {
+  background-color: var(--input-bg) !important;
+}
+
+[data-theme='light'] [style*="rgba(255, 255, 255"],
+[data-theme='coquette'] [style*="rgba(255, 255, 255"] {
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='light'] [style*="color: rgb(148, 163, 184)"],
+[data-theme='light'] [style*="color: rgb(203, 213, 225)"],
+[data-theme='light'] [style*="color: rgb(100, 116, 139)"],
+[data-theme='coquette'] [style*="color: rgb(148, 163, 184)"],
+[data-theme='coquette'] [style*="color: rgb(203, 213, 225)"],
+[data-theme='coquette'] [style*="color: rgb(100, 116, 139)"] {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme='light'] [style*="color: rgb(255, 255, 255)"],
+[data-theme='light'] [style*="color: rgb(248, 250, 252)"],
+[data-theme='coquette'] [style*="color: rgb(255, 255, 255)"],
+[data-theme='coquette'] [style*="color: rgb(248, 250, 252)"] {
+  color: var(--text-primary) !important;
 }
 
 /* 2. REGLAS QUE TRANSFORMAN LA WEB COMPLETA */

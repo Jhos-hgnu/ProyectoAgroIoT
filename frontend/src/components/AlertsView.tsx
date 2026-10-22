@@ -337,30 +337,39 @@ export function AlertsView({ potsList }: AlertsViewProps) {
           {/* Filtros */}
           <div className="d-flex gap-2 mb-3 pb-2 overflow-auto">
             <button
-              className="btn btn-sm px-3 rounded-2 border-0"
+              className="btn btn-sm px-3 py-1 text-white"
               style={{
-                backgroundColor: filter === "all" ? "#10b981" : "#131B2E",
-                color: filter === "all" ? "#ffffff" : "#94a3b8",
+                borderRadius: '20px',
+                backgroundColor: filter === "all" ? "#0284C7" : "transparent",
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                fontSize: '12px',
+                height: '36px',
               }}
               onClick={() => setFilter("all")}
             >
               Todas
             </button>
             <button
-              className="btn btn-sm px-3 rounded-2 border-0"
+              className="btn btn-sm px-3 py-1 text-white"
               style={{
-                backgroundColor: filter === "active" ? "#10b981" : "#131B2E",
-                color: filter === "active" ? "#ffffff" : "#94a3b8",
+                borderRadius: '20px',
+                backgroundColor: filter === "active" ? "#0284C7" : "transparent",
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                fontSize: '12px',
+                height: '36px',
               }}
               onClick={() => setFilter("active")}
             >
               Pendientes
             </button>
             <button
-              className="btn btn-sm px-3 rounded-2 border-0"
+              className="btn btn-sm px-3 py-1 text-white"
               style={{
-                backgroundColor: filter === "resolved" ? "#10b981" : "#131B2E",
-                color: filter === "resolved" ? "#ffffff" : "#94a3b8",
+                borderRadius: '20px',
+                backgroundColor: filter === "resolved" ? "#0284C7" : "transparent",
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                fontSize: '12px',
+                height: '36px',
               }}
               onClick={() => setFilter("resolved")}
             >

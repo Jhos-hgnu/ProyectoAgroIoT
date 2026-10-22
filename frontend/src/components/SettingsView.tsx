@@ -2,21 +2,31 @@ import { useState, useEffect } from 'react';
 
 type ThemeType = 'dark' | 'light' | 'coquette';
 
+export interface UserProfile {
+  name: string;
+  role: string;
+}
+
 interface SettingsViewProps {
   currentTheme?: ThemeType;
   onThemeChange?: (theme: ThemeType) => void;
+  profile: UserProfile;
+  onProfileSave: (profile: UserProfile) => void;
 }
 
-export function SettingsView({ currentTheme = 'dark', onThemeChange }: SettingsViewProps) {
+export function SettingsView({ currentTheme = 'dark', onThemeChange, profile, onProfileSave }: SettingsViewProps) {
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>(currentTheme);
 
   useEffect(() => {
     setSelectedTheme(currentTheme);
   }, [currentTheme]);
 
+  // Estado para controlar la edición de la columna derecha
+  const [isEditing, setIsEditing] = useState(false);
+
   const [userProfile, setUserProfile] = useState({
-    name: 'Elena R.',
-    role: 'Ing. Agrónoma',
+    name: profile.name,
+    role: profile.role,
     email: 'elena.agrolot@ejemplo.com',
   });
   const [syncInterval, setSyncInterval] = useState('5');
@@ -32,14 +42,57 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange }: SettingsV
     }
   };
 
+  const handleToggleEdit = () => {
+    if (isEditing) {
+      // Lógica al guardar los datos (aquí puedes hacer llamadas a API o persistir datos)
+      console.log('Datos guardados:', { userProfile, syncInterval, autoWatering });
+      onProfileSave({ name: userProfile.name, role: userProfile.role });
+    }
+    setIsEditing(!isEditing);
+  };
+
   return (
     <div className="d-flex flex-column gap-4">
       {/* Encabezado */}
-      <div>
-        <h3 className="fw-bold mb-1">Configuración del Sistema</h3>
-        <p className="mb-0 text-secondary" style={{ fontSize: '14px' }}>
-          Personalización visual, preferencias de cuenta y parámetros globales del invernadero
-        </p>
+      <div className="d-flex justify-content-between align-items-center">
+        <div>
+          <h3 className="fw-bold mb-1">Configuración del Sistema</h3>
+          <p className="mb-0 text-secondary" style={{ fontSize: '14px' }}>
+            Personalización visual, preferencias de cuenta y parámetros globales del invernadero
+          </p>
+        </div>
+
+        {/* Botón Editar / Guardar */}
+        <button
+          className="btn btn-sm px-3 py-1 text-white d-flex align-items-center gap-2"
+          style={{
+            borderRadius: '20px',
+            backgroundColor: '#0284C7',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            fontSize: '12px',
+            height: '36px',
+          }}
+          onClick={handleToggleEdit}
+        >
+          {isEditing ? (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              Guardar
+            </>
+          ) : (
+            <>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Editar
+            </>
+          )}
+        </button>
       </div>
 
       <div className="row g-4">
@@ -168,6 +221,7 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange }: SettingsV
                   className="form-control"
                   style={{ fontSize: '13px' }}
                   value={userProfile.name}
+                  disabled={!isEditing}
                   onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })}
                 />
               </div>
@@ -179,6 +233,7 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange }: SettingsV
                   className="form-control"
                   style={{ fontSize: '13px' }}
                   value={userProfile.role}
+                  disabled={!isEditing}
                   onChange={(e) => setUserProfile({ ...userProfile, role: e.target.value })}
                 />
               </div>
@@ -197,6 +252,7 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange }: SettingsV
                   className="form-select"
                   style={{ fontSize: '13px' }}
                   value={syncInterval}
+                  disabled={!isEditing}
                   onChange={(e) => setSyncInterval(e.target.value)}
                 >
                   <option value="1">1 segundo (Tiempo real)</option>
@@ -211,6 +267,7 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange }: SettingsV
                   type="checkbox"
                   id="autoWateringSwitch"
                   checked={autoWatering}
+                  disabled={!isEditing}
                   onChange={(e) => setAutoWatering(e.target.checked)}
                 />
                 <label className="form-check-label small" htmlFor="autoWateringSwitch">

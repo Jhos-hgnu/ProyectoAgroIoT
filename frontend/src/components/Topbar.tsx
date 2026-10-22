@@ -36,7 +36,7 @@ export const Topbar: React.FC<TopbarProps> = ({
             className="btn rounded-pill d-flex align-items-center gap-2.5 px-3 py-2 border-0"
             onClick={() => setIsOpen(!isOpen)}
             style={{ 
-              backgroundColor: 'var(--bg-card)', 
+              backgroundColor: 'transparent',
               border: '1px solid var(--border-color)', 
               fontSize: '13px',
               color: 'var(--text-primary)'
@@ -68,15 +68,15 @@ export const Topbar: React.FC<TopbarProps> = ({
                   className="w-100 text-start btn border-0 px-3 py-2 d-flex align-items-center gap-2"
                   style={{ 
                     fontSize: '13px', 
-                    backgroundColor: selectedPotId === pot.id ? 'rgba(16, 185, 129, 0.15)' : 'transparent', 
-                    color: selectedPotId === pot.id ? '#10B981' : 'var(--text-primary)' 
+                    backgroundColor: 'transparent',
+                    color: 'var(--text-primary)'
                   }}
                   onClick={() => {
                     onSelectPot(pot.id);
                     setIsOpen(false);
                   }}
                 >
-                  <span className="rounded-circle" style={{ width: '6px', height: '6px', backgroundColor: selectedPotId === pot.id ? '#10B981' : 'transparent' }}></span>
+                  <span className="rounded-circle" style={{ width: '6px', height: '6px', backgroundColor: 'transparent' }}></span>
                   {pot.name}
                 </button>
               ))}
@@ -88,7 +88,7 @@ export const Topbar: React.FC<TopbarProps> = ({
         <button 
           className="btn btn-sm position-relative rounded-circle d-flex align-items-center justify-content-center border-0" 
           style={{ 
-            backgroundColor: 'var(--bg-card)', 
+            backgroundColor: 'transparent',
             border: '1px solid var(--border-color)', 
             width: '38px', 
             height: '38px', 
