@@ -36,7 +36,95 @@ export function DevicesView({ potsList }: DevicesViewProps) {
 
   return (
     <div className="d-flex flex-column gap-3 text-white">
-      {/* 1. WIDGETS SUPERIORES CON GRÁFICAS MÁS GRANDES */}
+      {/* ENCABEZADO CON TÍTULO Y BUSCADOR/FILTROS INTEGRADOS A LA DERECHA */}
+      <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-2">
+        <div>
+          <h3 className="fw-bold text-white mb-1">Gestión de Dispositivos</h3>
+          <p className="text-secondary mb-0" style={{ color: '#94a3b8', fontSize: '14px' }}>
+            Inventario de nodos hardware, diagnóstico de red y calibración de actuadores
+          </p>
+        </div>
+
+        {/* TOOLBAR AL LADO DEL TÍTULO */}
+        <div className="d-flex flex-wrap align-items-center gap-2">
+          <div className="position-relative" style={{ width: '280px' }}>
+            <span className="position-absolute top-50 start-0 translate-middle-y ms-3 d-flex align-items-center pointer-events-none">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </span>
+            <style>{`
+              .custom-search-input::placeholder {
+                color: #FFFFFF !important;
+                opacity: 0.8 !important;
+              }
+            `}</style>
+            <input
+              type="text"
+              className="form-control text-white ps-5 custom-search-input"
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                borderRadius: '20px',
+                fontSize: '13px',
+                height: '36px',
+                color: '#FFFFFF',
+              }}
+              placeholder="Buscar maceta, cultivo o ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="d-flex align-items-center gap-1">
+            <button
+              type="button"
+              className="btn btn-sm px-3 py-1 text-white"
+              style={{
+                borderRadius: '20px',
+                backgroundColor: filterStatus === 'ALL' ? '#0284C7' : 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                fontSize: '12px',
+                height: '36px',
+              }}
+              onClick={() => setFilterStatus('ALL')}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm px-3 py-1 text-white"
+              style={{
+                borderRadius: '20px',
+                backgroundColor: filterStatus === 'ONLINE' ? '#0284C7' : 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                fontSize: '12px',
+                height: '36px',
+              }}
+              onClick={() => setFilterStatus('ONLINE')}
+            >
+              En línea
+            </button>
+            <button
+              type="button"
+              className="btn btn-sm px-3 py-1 text-white"
+              style={{
+                borderRadius: '20px',
+                backgroundColor: filterStatus === 'OFFLINE' ? '#0284C7' : 'transparent',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                fontSize: '12px',
+                height: '36px',
+              }}
+              onClick={() => setFilterStatus('OFFLINE')}
+            >
+              Offline
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 1. WIDGETS SUPERIORES */}
       <div className="row g-3">
         {/* Widget 1: Nodos Registrados */}
         <div className="col-12 col-md-3">
@@ -91,7 +179,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
           </div>
         </div>
 
-        {/* Widget 3: Firmware Flota */}
+        {/* Widget 3: Firmware Flota (Cambiado de amarillo a Cian/Azul) */}
         <div className="col-12 col-md-3">
           <div className="p-3 rounded-3 border border-secondary border-opacity-25" style={{ backgroundColor: '#131B2E' }}>
             <div className="d-flex align-items-center justify-content-between mb-2">
@@ -105,7 +193,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
               </div>
               <svg width="38" height="38" viewBox="0 0 36 36">
                 <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#334155" strokeWidth="5" />
-                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="#F59E0B" strokeWidth="5" strokeDasharray="80, 100" />
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="#38BDF8" strokeWidth="5" strokeDasharray="80, 100" />
               </svg>
             </div>
             <div className="fs-3 fw-bold text-white mb-2">v1.2.0</div>
@@ -140,84 +228,8 @@ export function DevicesView({ potsList }: DevicesViewProps) {
         </div>
       </div>
 
-      {/* 2. TOOLBAR (BUSCADOR CON TEXTO BLANCO VISIBLE) */}
-      <div className="d-flex flex-wrap align-items-center justify-content-end gap-3 p-1">
-        <div className="position-relative" style={{ width: '320px' }}>
-          <span className="position-absolute top-50 start-0 translate-middle-y ms-3 d-flex align-items-center pointer-events-none">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.9 }}>
-              <circle cx="11" cy="11" r="8" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </span>
-          <style>{`
-            .custom-search-input::placeholder {
-              color: #FFFFFF !important;
-              opacity: 0.9 !important;
-            }
-          `}</style>
-          <input
-            type="text"
-            className="form-control text-white ps-5 custom-search-input"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.4)',
-              borderRadius: '20px',
-              fontSize: '13px',
-              height: '38px',
-              color: '#FFFFFF',
-            }}
-            placeholder="Buscar maceta, cultivo o ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Filtros */}
-        <div className="d-flex align-items-center gap-2">
-          <button
-            type="button"
-            className="btn btn-sm px-4 py-2 text-white"
-            style={{
-              borderRadius: '20px',
-              backgroundColor: filterStatus === 'ALL' ? '#0284C7' : 'transparent',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              fontSize: '13px',
-            }}
-            onClick={() => setFilterStatus('ALL')}
-          >
-            Todos
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm px-4 py-2 text-white"
-            style={{
-              borderRadius: '20px',
-              backgroundColor: filterStatus === 'ONLINE' ? '#0284C7' : 'transparent',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              fontSize: '13px',
-            }}
-            onClick={() => setFilterStatus('ONLINE')}
-          >
-            En línea
-          </button>
-          <button
-            type="button"
-            className="btn btn-sm px-4 py-2 text-white"
-            style={{
-              borderRadius: '20px',
-              backgroundColor: filterStatus === 'OFFLINE' ? '#0284C7' : 'transparent',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              fontSize: '13px',
-            }}
-            onClick={() => setFilterStatus('OFFLINE')}
-          >
-            Offline
-          </button>
-        </div>
-      </div>
-
-      {/* 3. INVENTARIO & INSPECTOR (AMBOS CON ALTURA Y ESPACIEDAD UNIFORME) */}
-      <div className="row g-4 align-items-stretch">
+      {/* 2. INVENTARIO & INSPECTOR */}
+      <div className="row g-4 align-items-stretch mt-1">
         {/* TABLA DE INVENTARIO HARDWARE (IZQUIERDA) */}
         <div className="col-12 col-lg-7 d-flex flex-column">
           <div className="p-4 rounded-3 border border-secondary border-opacity-10 h-100 d-flex flex-column" style={{ backgroundColor: '#131B2E', minHeight: '380px' }}>
@@ -260,7 +272,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                         <td className="bg-transparent border-0 py-3">
                           <div className="fw-bold text-white" style={{ fontSize: '14px' }}>{pot.name}</div>
                           <div className="small text-secondary" style={{ fontSize: '12px' }}>
-                            ID: #ESP32-M{pot.number} • {pot.zone || 'ZONA A'}
+                            ID: #ESP32-M{pot.number} — {pot.zone || 'ZONA A'}
                           </div>
                         </td>
                         <td className="bg-transparent border-0 py-3">
@@ -271,7 +283,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                         </td>
                         <td className="bg-transparent border-0 py-3" style={{ minWidth: '140px' }}>
                           <div className="d-flex justify-content-between align-items-center mb-1">
-                            <span className="small" style={{ fontSize: '11px', color: isOnline ? '#10B981' : '#EF4444' }}>
+                            <span className="small" style={{ fontSize: '11px', color: isOnline ? '#10B981' : '#64748B' }}>
                               {isOnline ? 'En línea' : 'Desconectado'}
                             </span>
                             <span className="small text-secondary" style={{ fontSize: '11px' }}>
@@ -284,7 +296,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
                               role="progressbar"
                               style={{
                                 width: isOnline ? '85%' : '0%',
-                                backgroundColor: isOnline ? '#10B981' : '#EF4444',
+                                backgroundColor: isOnline ? '#10B981' : '#64748B',
                                 borderRadius: '2px',
                               }}
                             ></div>
@@ -302,7 +314,7 @@ export function DevicesView({ potsList }: DevicesViewProps) {
           </div>
         </div>
 
-        {/* PANEL INSPECTOR MACETA (DERECHA - PERFECTAMENTE DISTRIBUIDO Y ORGANIZADO) */}
+        {/* PANEL INSPECTOR MACETA (DERECHA) */}
         <div className="col-12 col-lg-5 d-flex flex-column">
           {selectedPot ? (
             <div className="p-4 rounded-3 border border-secondary border-opacity-10 h-100 d-flex flex-column justify-content-between" style={{ backgroundColor: '#131B2E', minHeight: '380px' }}>
