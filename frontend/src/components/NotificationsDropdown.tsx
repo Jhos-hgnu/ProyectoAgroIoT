@@ -78,12 +78,12 @@ export const NotificationsDropdown: React.FC<NotificationsDropdownProps> = ({
               }}
             >
               {/* Contenido principal */}
-              <div className="flex-grow-1 pe-2">
+              <div className="grow pe-2">
                 <div className="d-flex justify-content-between align-items-center gap-2 mb-1">
                   <strong className="notification-title fw-semibold" style={{ fontSize: '12px', color: 'var(--badge-text)' }}>
                     {n.titulo}
                   </strong>
-                  <span className="text-secondary opacity-75 flex-shrink-0" style={{ fontSize: '10px' }}>
+                  <span className="text-secondary opacity-75 shrink-0" style={{ fontSize: '10px' }}>
                     {n.tiempo}
                   </span>
                 </div>
