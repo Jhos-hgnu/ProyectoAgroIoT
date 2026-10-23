@@ -1,8 +1,12 @@
 import { useState } from "react";
 import type { PotData } from "../data/potsData";
+import type { Alerta } from "../types/contrato";
+import type { UseNotificacionesWeb } from "../hooks/useNotificacionesWeb";
 
 interface AlertItem {
   id: string;
+  /** id de la alerta en la API (solo maceta-01). */
+  apiId?: number;
   potId: string;
   potName: string;
   type: "deficit" | "temp" | "info";
@@ -22,26 +26,81 @@ interface AlertItem {
 
 interface AlertsViewProps {
   potsList: PotData[];
+  /** Datos reales de maceta-01; sin ellos se usan solo las alertas calculadas de las macetas ficticias. */
+  live?: {
+    alertas: Alerta[];
+    tieneBomba: boolean;
+    resolverAlerta: (alertaId: number) => Promise<void>;
+    regar: () => Promise<void>;
+  };
+  /** Notificaciones del navegador para alertas nuevas de maceta-01. */
+  notificacionesWeb?: UseNotificacionesWeb;
 }
 
-export function AlertsView({ potsList }: AlertsViewProps) {
+const SENSORES: Record<string, { nombre: string; unidad: string }> = {
+  HUMEDAD_SUELO: { nombre: "Humedad Sustrato", unidad: "%" },
+  TEMPERATURA: { nombre: "Temp. Aire", unidad: " °C" },
+  HUMEDAD_AIRE: { nombre: "Humedad Aire", unidad: "%" },
+  LUZ: { nombre: "Luz", unidad: "%" },
+};
+
+const SEVERIDADES: Record<Alerta["severidad"], string> = {
+  INFO: "Informativa",
+  ADVERTENCIA: "Advertencia",
+  CRITICA: "Crítica",
+};
+
+const fechaGuatemala = new Intl.DateTimeFormat("es-GT", {
+  timeZone: "America/Guatemala",
+  dateStyle: "short",
+  timeStyle: "short",
+});
+
+function haceCuanto(fechaIso: string): string {
+  const fecha = new Date(fechaIso);
+  const minutos = Math.floor((Date.now() - fecha.getTime()) / 60_000);
+  if (minutos < 1) return "Ahora";
+  if (minutos < 60) return `Hace ${minutos} min`;
+  if (minutos < 24 * 60) return `Hace ${Math.floor(minutos / 60)} h`;
+  return fechaGuatemala.format(fecha);
+}
+
+function adaptarAlerta(alerta: Alerta, potName: string, tieneBomba: boolean): AlertItem {
+  const sensor = alerta.tipoSensor ? SENSORES[alerta.tipoSensor] : undefined;
+  const esSuelo = alerta.tipoSensor === "HUMEDAD_SUELO";
+  return {
+    id: `api-${alerta.id}`,
+    apiId: alerta.id,
+    potId: "01",
+    potName,
+    type: esSuelo ? "deficit" : alerta.tipoSensor ? "temp" : "info",
+    title: alerta.mensaje,
+    description: `Severidad ${SEVERIDADES[alerta.severidad].toLowerCase()}${
+      sensor ? ` en ${sensor.nombre.toLowerCase()}` : " del sistema"
+    }. Registrada el ${fechaGuatemala.format(new Date(alerta.creadaEn))}${
+      alerta.resueltaEn ? `; resuelta el ${fechaGuatemala.format(new Date(alerta.resueltaEn))}` : ""
+    }`,
+    timestamp: haceCuanto(alerta.creadaEn),
+    resolved: alerta.resueltaEn !== null,
+    metricInfo: alerta.valor !== null
+      ? {
+          label: sensor?.nombre ?? "Valor",
+          value: `${alerta.valor}${sensor?.unidad ?? ""}`,
+          target: SEVERIDADES[alerta.severidad],
+        }
+      : undefined,
+    suggestedAction: esSuelo && tieneBomba ? { label: "Ejecutar Riego" } : undefined,
+  };
+}
+
+export function AlertsView({ potsList, live, notificacionesWeb }: AlertsViewProps) {
   const [resolvedAlertIds, setResolvedAlertIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const historicalAlerts: AlertItem[] = [{
-      id: "alt-3",
-      potId: "01",
-      potName:
-        potsList.find((p) => p.id === "01")?.name ||
-        "Maceta 01 — Tomates Cherry",
-      type: "info",
-      title: "Riego Automático Completado",
-      description:
-        "Humedad del sustrato estabilizada en 72% tras pulso programado.",
-      timestamp: "Hace 2 horas",
-      resolved: true,
-      metricInfo: { label: "Humedad Sustrato", value: "72%", target: "Óptimo" },
-  }];
+  const potName01 = potsList.find((p) => p.id === "01")?.name ?? "Maceta 01";
+  const historicalAlerts: AlertItem[] = live
+    ? live.alertas.map((alerta) => adaptarAlerta(alerta, potName01, live.tieneBomba))
+    : [];
   const [filter, setFilter] = useState<"all" | "active" | "resolved">("active");
   const [soilThreshold, setSoilThreshold] = useState<number>(45);
   const [tempThreshold, setTempThreshold] = useState<number>(30);
@@ -49,7 +108,8 @@ export function AlertsView({ potsList }: AlertsViewProps) {
   const [webNotif, setWebNotif] = useState<boolean>(true);
 
   const currentAlerts = potsList.flatMap((pot): AlertItem[] => {
-    if (pot.isLoading) return [];
+    // maceta-01 usa las alertas reales de la API.
+    if (pot.isLoading || (live && pot.id === "01")) return [];
 
     const alertsForPot: AlertItem[] = [];
     if (pot.soilMoisture !== null && pot.soilMoisture < soilThreshold) {
@@ -95,10 +155,19 @@ export function AlertsView({ potsList }: AlertsViewProps) {
   const alerts = [...historicalAlerts, ...currentAlerts];
 
   const handleResolve = (id: string) => {
+    const alerta = alerts.find((a) => a.id === id);
+    if (live && alerta?.apiId !== undefined) {
+      void live.resolverAlerta(alerta.apiId);
+      return;
+    }
     setResolvedAlertIds((previous) => new Set(previous).add(id));
   };
 
   const handleTriggerAction = (alert: AlertItem) => {
+    if (live && alert.apiId !== undefined) {
+      void live.regar();
+      return;
+    }
     window.alert(
       `Acción ejecutada en ${alert.potName}: ${alert.suggestedAction?.label}`,
     );
@@ -564,8 +633,12 @@ export function AlertsView({ potsList }: AlertsViewProps) {
                 className="form-check-input"
                 type="checkbox"
                 id="webNotifSwitch"
-                checked={webNotif}
-                onChange={(e) => setWebNotif(e.target.checked)}
+                checked={notificacionesWeb ? notificacionesWeb.activas : webNotif}
+                disabled={notificacionesWeb !== undefined && !notificacionesWeb.soportadas}
+                onChange={(e) => {
+                  if (notificacionesWeb) void notificacionesWeb.alternar(e.target.checked);
+                  else setWebNotif(e.target.checked);
+                }}
               />
               <label
                 className="form-check-label text-white small"
@@ -573,6 +646,15 @@ export function AlertsView({ potsList }: AlertsViewProps) {
               >
                 Notificaciones Web Push
               </label>
+              {notificacionesWeb && (
+                <span className="d-block" style={{ color: "#94a3b8", fontSize: "12px" }}>
+                  {!notificacionesWeb.soportadas
+                    ? "Este navegador no permite notificaciones."
+                    : notificacionesWeb.permiso === "denied"
+                      ? "Bloqueadas en el navegador: permítelas desde el candado de la barra de direcciones."
+                      : "Avisa de alertas nuevas mientras el dashboard está abierto."}
+                </span>
+              )}
             </div>
 
             <div className="form-check form-switch mb-3">
@@ -580,7 +662,8 @@ export function AlertsView({ potsList }: AlertsViewProps) {
                 className="form-check-input"
                 type="checkbox"
                 id="telegramNotifSwitch"
-                checked={telegramNotif}
+                checked={notificacionesWeb ? false : telegramNotif}
+                disabled={notificacionesWeb !== undefined}
                 onChange={(e) => setTelegramNotif(e.target.checked)}
               />
               <label
@@ -589,6 +672,9 @@ export function AlertsView({ potsList }: AlertsViewProps) {
               >
                 Bot Telegram AgroloT
               </label>
+              {notificacionesWeb && (
+                <span className="d-block" style={{ color: "#64748B", fontSize: "11px" }}>Próximamente</span>
+              )}
             </div>
           </div>
         </div>

@@ -10,6 +10,9 @@ import { AlertsView } from "./components/AlertsView";
 import { SettingsView } from "./components/SettingsView";
 import type { UserProfile } from "./components/SettingsView";
 import { AnalyticsView } from "./components/AnalyticsView";
+import { notificacionesDeMaceta } from "./data/notificaciones";
+import { useSalud } from "./hooks/useSalud";
+import { useNotificacionesWeb } from "./hooks/useNotificacionesWeb";
 
 const POT_01_LOADING: PotData = {
   ...POTS_DATA["01"],
@@ -51,7 +54,14 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     name: 'Elena R.',
     role: 'Ing. Agrónoma',
   });
-  const maceta01 = useMaceta();
+  // Frecuencia de consulta elegida en Configuración (segundos).
+  const [syncIntervalSeg, setSyncIntervalSeg] = useState(5);
+  const maceta01 = useMaceta('maceta-01', syncIntervalSeg * 1000);
+  const notificaciones = maceta01.dispositivo
+    ? notificacionesDeMaceta(maceta01.dispositivo.nombre, maceta01.alertas, maceta01.riegos, maceta01.conectado)
+    : [];
+  const salud = useSalud();
+  const notificacionesWeb = useNotificacionesWeb(maceta01.alertas, maceta01.dispositivo?.nombre ?? "Maceta 01");
 
   // Estado global para el tema seleccionado
   const [theme, setTheme] = useState<'dark' | 'light' | 'coquette'>(() => {
@@ -87,6 +97,9 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       onSelectPot={setSelectedPotId}
       onAddPot={handleAddPot}
       profile={profile}
+      notificaciones={notificaciones}
+      esp32Conectado={maceta01.dispositivo ? maceta01.conectado : null}
+      salud={salud}
     >
       {/* VISTA OVERVIEW */}
       {activeTab === "overview" &&
@@ -129,15 +142,41 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           onAddPot={handleAddPot}
           selectedPotId={selectedPotId}
           onSelectPot={setSelectedPotId}
+          live={{
+            dispositivo: maceta01.dispositivo,
+            guardandoConfig: maceta01.guardandoConfig,
+            actualizarConfig: maceta01.actualizarConfig,
+          }}
+          salud={salud}
         />
       )}
 
       {/* VISTA DE CENTRO DE ALERTAS */}
-      {activeTab === "alerts" && <AlertsView potsList={potsActualizadas} />}
+      {activeTab === "alerts" && (
+        <AlertsView
+          potsList={potsActualizadas}
+          live={{
+            alertas: maceta01.alertas,
+            tieneBomba: maceta01.tieneBomba,
+            resolverAlerta: maceta01.resolverAlerta,
+            regar: () => maceta01.regar(),
+          }}
+          notificacionesWeb={notificacionesWeb}
+        />
+      )}
 
       {/* VISTA DE CONFIGURACIÓN CON PROPS DE TEMA */}
       {activeTab === "settings" && (
-        <SettingsView currentTheme={theme} onThemeChange={setTheme} profile={profile} onProfileSave={setProfile} />
+        <SettingsView
+          currentTheme={theme}
+          onThemeChange={setTheme}
+          profile={profile}
+          onProfileSave={setProfile}
+          syncIntervalSeg={syncIntervalSeg}
+          onSyncIntervalChange={setSyncIntervalSeg}
+          riegoAutomatico={maceta01.dispositivo?.riegoAutomatico ?? null}
+          onRiegoAutomaticoChange={(activo) => maceta01.actualizarConfig({ riegoAutomatico: activo })}
+        />
       )}
 
       {/* VISTA DE ANÁLISIS */}
@@ -146,6 +185,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           potsList={potsActualizadas}
           selectedPotId={selectedPotId}
           onSelectPot={setSelectedPotId}
+          live={{ dispositivo: maceta01.dispositivo }}
         />
       )}
 

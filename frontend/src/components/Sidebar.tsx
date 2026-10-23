@@ -1,14 +1,23 @@
 import React from 'react';
 import type { UserProfile } from './SettingsView';
+import { estadoFirebase, type UseSalud } from '../hooks/useSalud';
 
 interface SidebarProps {
   onLogout: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
   profile: UserProfile;
+  /** Conexión de maceta-01 (null mientras no responde la API). */
+  esp32Conectado?: boolean | null;
+  salud?: UseSalud;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActiveTab, profile }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActiveTab, profile, esp32Conectado = null, salud }) => {
+  const esp32 = esp32Conectado === null
+    ? { texto: 'Consultando…', color: '#94A3B8' }
+    : esp32Conectado ? { texto: 'En línea', color: '#10B981' } : { texto: 'Desconectado', color: '#F87171' };
+  const firebase = salud ? estadoFirebase(salud) : { texto: 'Conectado', color: '#38BDF8' };
+
   return (
     <aside 
       className="d-flex flex-column justify-content-between p-3 border-end sticky-top" 
@@ -55,10 +64,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
         <div className="rounded-3 p-3 mb-4" style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
           <div className="d-flex justify-content-between align-items-center mb-2" style={{ fontSize: '12px' }}>
             <span className="d-flex align-items-center gap-2 text-secondary">
-              <span className="rounded-circle" style={{ width: '8px', height: '8px', backgroundColor: '#10B981' }}></span>
+              <span className="rounded-circle" style={{ width: '8px', height: '8px', backgroundColor: esp32.color }}></span>
               ESP32 Mesh
             </span>
-            <span className="fw-medium" style={{ color: '#10B981' }}>En línea</span>
+            <span className="fw-medium" style={{ color: esp32.color }}>{esp32.texto}</span>
           </div>
           <div className="d-flex justify-content-between align-items-center" style={{ fontSize: '12px' }}>
             <span className="d-flex align-items-center gap-2 text-secondary">
@@ -67,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onLogout, activeTab, setActive
               </svg>
               Firebase RTDB
             </span>
-            <span className="fw-medium" style={{ color: '#38BDF8' }}>Conectado</span>
+            <span className="fw-medium" style={{ color: firebase.color }}>{firebase.texto}</span>
           </div>
         </div>
 

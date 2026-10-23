@@ -12,9 +12,24 @@ interface SettingsViewProps {
   onThemeChange?: (theme: ThemeType) => void;
   profile: UserProfile;
   onProfileSave: (profile: UserProfile) => void;
+  /** Segundos entre consultas a la API. */
+  syncIntervalSeg?: number;
+  onSyncIntervalChange?: (segundos: number) => void;
+  /** Riego automático de maceta-01 (null mientras no responde la API). */
+  riegoAutomatico?: boolean | null;
+  onRiegoAutomaticoChange?: (activo: boolean) => Promise<boolean>;
 }
 
-export function SettingsView({ currentTheme = 'dark', onThemeChange, profile, onProfileSave }: SettingsViewProps) {
+export function SettingsView({
+  currentTheme = 'dark',
+  onThemeChange,
+  profile,
+  onProfileSave,
+  syncIntervalSeg = 5,
+  onSyncIntervalChange,
+  riegoAutomatico = null,
+  onRiegoAutomaticoChange,
+}: SettingsViewProps) {
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>(currentTheme);
 
   useEffect(() => {
@@ -29,8 +44,13 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange, profile, on
     role: profile.role,
     email: 'elena.agrolot@ejemplo.com',
   });
-  const [syncInterval, setSyncInterval] = useState('5');
-  const [autoWatering, setAutoWatering] = useState(true);
+  const [syncInterval, setSyncInterval] = useState(String(syncIntervalSeg));
+  const [autoWatering, setAutoWatering] = useState(riegoAutomatico ?? true);
+
+  // Mientras no se edita, los valores reflejan lo que reporta la API.
+  useEffect(() => {
+    if (!isEditing && riegoAutomatico !== null) setAutoWatering(riegoAutomatico);
+  }, [riegoAutomatico, isEditing]);
 
   const handleThemeChange = (theme: ThemeType) => {
     setSelectedTheme(theme);
@@ -42,11 +62,17 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange, profile, on
     }
   };
 
-  const handleToggleEdit = () => {
+  const handleToggleEdit = async () => {
     if (isEditing) {
-      // Lógica al guardar los datos (aquí puedes hacer llamadas a API o persistir datos)
-      console.log('Datos guardados:', { userProfile, syncInterval, autoWatering });
       onProfileSave({ name: userProfile.name, role: userProfile.role });
+      onSyncIntervalChange?.(Number(syncInterval));
+      if (onRiegoAutomaticoChange && riegoAutomatico !== null && autoWatering !== riegoAutomatico) {
+        const ok = await onRiegoAutomaticoChange(autoWatering);
+        if (!ok) {
+          window.alert('No se pudo actualizar el riego automático en la API. Revisa la conexión e inténtalo de nuevo.');
+          setAutoWatering(riegoAutomatico);
+        }
+      }
     }
     setIsEditing(!isEditing);
   };
@@ -72,7 +98,7 @@ export function SettingsView({ currentTheme = 'dark', onThemeChange, profile, on
             fontSize: '12px',
             height: '36px',
           }}
-          onClick={handleToggleEdit}
+          onClick={() => void handleToggleEdit()}
         >
           {isEditing ? (
             <>

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { adaptarMaceta } from '../data/adaptador';
+import { adaptarMaceta, riegoAbierto } from '../data/adaptador';
 import type { PotData } from '../data/potsData';
 import { ApiError, api } from '../api/cliente';
-import type { Alerta, Dispositivo, Mediciones, Riego } from '../types/contrato';
+import type { Alerta, Dispositivo, DispositivoPatch, Mediciones, Riego } from '../types/contrato';
 
 interface Snapshot {
   dispositivo: Dispositivo | null;
@@ -13,7 +13,11 @@ interface Snapshot {
 
 export interface UseMaceta {
   pot: PotData | null;
+  dispositivo: Dispositivo | null;
   riego: Riego | null;
+  riegos: Riego[];
+  /** Activas y resueltas, de la más reciente a la más antigua. */
+  alertas: Alerta[];
   conectado: boolean;
   tieneBomba: boolean;
   duracionRiegoSeg: number | null;
@@ -22,7 +26,10 @@ export interface UseMaceta {
   error: string | null;
   actualizadoEn: Date | null;
   solicitandoRiego: boolean;
-  regar: () => Promise<void>;
+  guardandoConfig: boolean;
+  regar: (duracionSeg?: number) => Promise<void>;
+  resolverAlerta: (alertaId: number) => Promise<void>;
+  actualizarConfig: (cambios: DispositivoPatch) => Promise<boolean>;
   refrescar: () => void;
 }
 
@@ -37,7 +44,7 @@ function mensajeError(error: unknown): string {
   return error instanceof Error ? error.message : 'Ocurrió un error inesperado al consultar la API.';
 }
 
-export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta {
+export function useMaceta(dispositivoId = 'maceta-01', intervaloNormal = INTERVALO_NORMAL): UseMaceta {
   const [snapshot, setSnapshot] = useState<Snapshot>({
     dispositivo: null,
     riegos: [],
@@ -48,6 +55,7 @@ export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta {
   const [error, setError] = useState<string | null>(null);
   const [actualizadoEn, setActualizadoEn] = useState<Date | null>(null);
   const [solicitandoRiego, setSolicitandoRiego] = useState(false);
+  const [guardandoConfig, setGuardandoConfig] = useState(false);
   const enVuelo = useRef(false);
   const enviandoRiego = useRef(false);
   const refrescarPendiente = useRef(false);
@@ -65,8 +73,9 @@ export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta {
     if (consultarMediciones) ultimaConsultaMediciones.current = Date.now();
     const consultasPrincipales = Promise.allSettled([
       api.dispositivo(dispositivoId),
-      api.riegos(dispositivoId, 20),
-      api.alertas(dispositivoId),
+      // 100 (el máximo de la API) para estimar el agua usada desde el último rellenado del tanque.
+      api.riegos(dispositivoId, 100),
+      api.alertas(dispositivoId, 'TODAS'),
     ]);
     const consultaMediciones = consultarMediciones
       ? api.mediciones(dispositivoId, {
@@ -126,13 +135,13 @@ export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta {
   const refrescar = useCallback(() => {
     void cargar();
   }, [cargar]);
-  const riegoEnCurso = snapshot.riegos[0]?.estado === 'PENDIENTE' || snapshot.riegos[0]?.estado === 'ENVIADO';
+  const riegoEnCurso = riegoAbierto(snapshot.riegos[0]);
 
   useEffect(() => {
     void cargar();
     const intervalo = window.setInterval(
       () => void cargar(),
-      riegoEnCurso ? INTERVALO_RIEGO : INTERVALO_NORMAL,
+      riegoEnCurso ? INTERVALO_RIEGO : intervaloNormal,
     );
     const alCambiarVisibilidad = () => {
       if (document.visibilityState === 'visible') void cargar();
@@ -143,18 +152,17 @@ export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta {
       window.clearInterval(intervalo);
       document.removeEventListener('visibilitychange', alCambiarVisibilidad);
     };
-  }, [cargar, riegoEnCurso]);
+  }, [cargar, riegoEnCurso, intervaloNormal]);
 
-  const regar = useCallback(async () => {
-    const ultimoRiegoEnCurso = snapshot.riegos[0]?.estado === 'PENDIENTE'
-      || snapshot.riegos[0]?.estado === 'ENVIADO';
+  const regar = useCallback(async (duracionSeg?: number) => {
+    const ultimoRiegoEnCurso = riegoAbierto(snapshot.riegos[0]);
     if (enviandoRiego.current || ultimoRiegoEnCurso || !snapshot.dispositivo?.tieneBomba) return;
     enviandoRiego.current = true;
     setSolicitandoRiego(true);
     setError(null);
     try {
       const nuevoRiego = await api.regar(dispositivoId, {
-        duracionSeg: snapshot.dispositivo.duracionRiegoSeg,
+        duracionSeg: duracionSeg ?? snapshot.dispositivo.duracionRiegoSeg,
       });
       setSnapshot((actual) => ({
         ...actual,
@@ -169,14 +177,43 @@ export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta {
     }
   }, [cargar, dispositivoId, snapshot.dispositivo, snapshot.riegos]);
 
+  const resolverAlerta = useCallback(async (alertaId: number) => {
+    try {
+      const resuelta = await api.resolverAlerta(alertaId);
+      setSnapshot((actual) => ({
+        ...actual,
+        alertas: actual.alertas.map((alerta) => (alerta.id === resuelta.id ? resuelta : alerta)),
+      }));
+    } catch (errorApi) {
+      setError(mensajeError(errorApi));
+    }
+  }, []);
+
+  const actualizarConfig = useCallback(async (cambios: DispositivoPatch) => {
+    setGuardandoConfig(true);
+    try {
+      const actualizado = await api.actualizarDispositivo(dispositivoId, cambios);
+      setSnapshot((actual) => ({ ...actual, dispositivo: actualizado }));
+      return true;
+    } catch (errorApi) {
+      setError(mensajeError(errorApi));
+      return false;
+    } finally {
+      setGuardandoConfig(false);
+    }
+  }, [dispositivoId]);
+
   const { dispositivo, riegos, alertas, mediciones } = snapshot;
   const pot = dispositivo
-    ? adaptarMaceta(dispositivo, riegos, alertas, mediciones)
+    ? adaptarMaceta(dispositivo, riegos, alertas.filter((alerta) => alerta.resueltaEn === null), mediciones)
     : null;
 
   return {
     pot,
+    dispositivo,
     riego: riegos[0] ?? null,
+    riegos,
+    alertas,
     conectado: dispositivo?.conectado ?? false,
     tieneBomba: dispositivo?.tieneBomba ?? false,
     duracionRiegoSeg: dispositivo?.duracionRiegoSeg ?? null,
@@ -185,7 +222,10 @@ export function useMaceta(dispositivoId = 'maceta-01'): UseMaceta {
     error,
     actualizadoEn,
     solicitandoRiego,
+    guardandoConfig,
     regar,
+    resolverAlerta,
+    actualizarConfig,
     refrescar,
   };
 }

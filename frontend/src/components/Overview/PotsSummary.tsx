@@ -1,6 +1,5 @@
 import React from 'react';
 import type { PotData } from '../../data/potsData';
-import { Proximamente } from '../Proximamente';
 
 interface PotsSummaryProps {
   potsList: PotData[];
@@ -103,7 +102,7 @@ export const PotsSummary: React.FC<PotsSummaryProps> = ({
                     <small style={{ fontSize: '11px', color: isSelected ? '#10B981' : statusColor }}>
                       {isSelected ? 'Nodo seleccionado · ' : (
                         <>
-                          {pot.zone ?? (pot.id === '01' && !pot.isLoading ? <Proximamente /> : 'Ubicación pendiente')}
+                          {pot.zone ?? (pot.id === '01' && !pot.isLoading ? 'Sin ubicación' : 'Ubicación pendiente')}
                           {' · '}
                         </>
                       )}

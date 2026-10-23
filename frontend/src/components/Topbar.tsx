@@ -8,6 +8,8 @@ interface TopbarProps {
   potsList: PotData[];
   onOpenAddPotModal: () => void;
   onNavigate?: (vista: string) => void;
+  /** Notificaciones reales de la API; si faltan, se muestran las de ejemplo. */
+  notificacionesLive?: Notificacion[];
 }
 
 const NOTIFICACIONES_INICIALES: Notificacion[] = [
@@ -42,12 +44,15 @@ export const Topbar: React.FC<TopbarProps> = ({
   onSelectPot, 
   potsList, 
   onOpenAddPotModal,
-  onNavigate = () => {}
+  onNavigate = () => {},
+  notificacionesLive,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>(NOTIFICACIONES_INICIALES);
+  // Se guardan los ids descartados para que el polling no vuelva a mostrarlos.
+  const [descartadas, setDescartadas] = useState<Set<number>>(() => new Set());
+  const notificaciones = (notificacionesLive ?? NOTIFICACIONES_INICIALES).filter((n) => !descartadas.has(n.id));
 
   const selectorRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -55,11 +60,11 @@ export const Topbar: React.FC<TopbarProps> = ({
   const currentPot = potsList.find(p => p.id === selectedPotId) || potsList[0];
 
   const marcarTodasLeidas = () => {
-    setNotificaciones([]);
+    setDescartadas((prev) => new Set([...prev, ...notificaciones.map((n) => n.id)]));
   };
 
   const eliminarNotificacion = (id: number) => {
-    setNotificaciones((prev) => prev.filter((n) => n.id !== id));
+    setDescartadas((prev) => new Set(prev).add(id));
   };
 
   useEffect(() => {
