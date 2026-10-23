@@ -86,10 +86,11 @@ export const api = {
 
   resolverAlerta: (alertaId: number) => pedir<Alerta>(`/alertas/${alertaId}/resolver`, { method: 'POST' }),
 
-  generarReporte: (dispositivoId: string, req: ReporteRequest = {}) =>
+  generarReporte: (dispositivoId: string, req: ReporteRequest = {}, signal?: AbortSignal) =>
     pedir<Reporte>(`/dispositivos/${id(dispositivoId)}/reportes`, {
       method: 'POST',
       body: JSON.stringify(req),
+      signal,
     }),
 
   reportes: (dispositivoId: string) => pedir<ReporteResumen[]>(`/dispositivos/${id(dispositivoId)}/reportes`),

@@ -1,19 +1,36 @@
 import { useState, useEffect } from 'react';
-import { api } from '../api/cliente';
 import type { PotData } from '../data/potsData';
-import type { ConsultaMediciones } from '../types/contrato';
+import type { Dispositivo, Punto } from '../types/contrato';
+import { useAnalitica } from '../hooks/useAnalitica';
 
 interface AnalyticsViewProps {
   potsList: PotData[];
   selectedPotId: string;
   onSelectPot: (potId: string) => void;
+  /** Datos reales de maceta-01; las demás macetas conservan sus datos de ejemplo. */
+  live?: { dispositivo: Dispositivo | null };
 }
 
-export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: AnalyticsViewProps) {
+// Datos de ejemplo para las macetas ficticias.
+const METRICAS_EJEMPLO = { humedadProm: 58.4, aguaTotal: 1.45, tempProm: 24.2, riegosTotales: 12 };
+const PUNTOS_EJEMPLO = '0,110 50,90 100,105 150,40 200,65 250,50 300,85 350,30 400,60 450,45 500,55';
+const MAX_PULSOS = 6;
+
+// Gráfica de 500 × 160: 0 % de humedad en y = 150 y 100 % en y = 20.
+const valorAY = (valor: number) => 150 - (Math.min(100, Math.max(0, valor)) / 100) * 130;
+
+function promedio(puntos: Punto[]): number | null {
+  return puntos.length ? puntos.reduce((acc, p) => acc + p.valor, 0) / puntos.length : null;
+}
+
+function fijo(valor: number | null, decimales = 1): string {
+  return valor === null ? '—' : valor.toFixed(decimales);
+}
+
+export function AnalyticsView({ potsList, selectedPotId, onSelectPot, live }: AnalyticsViewProps) {
   // Estado local para la maceta seleccionada mediante los botones de la derecha
   const [activePotId, setActivePotId] = useState<string>(selectedPotId);
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
-  const [loading, setLoading] = useState(false);
 
   // Sincronizar si cambia el selector global de la Topbar
   useEffect(() => {
@@ -23,41 +40,66 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
   // Maceta actualmente activa
   const currentPot = potsList.find((p) => p.id === activePotId) ?? potsList[0];
 
-  const [metricas, setMetricas] = useState({
-    humedadProm: 58.4,
-    aguaTotal: 1.45,
-    tempProm: 24.2,
-    riegosTotales: 12,
-  });
+  // Solo maceta-01 consulta la API.
+  const esLive = live !== undefined && currentPot?.id === '01';
+  const analitica = useAnalitica(esLive ? live.dispositivo?.id ?? 'maceta-01' : null, timeRange);
+  const loading = esLive && analitica.cargando;
 
-  // Efecto para cargar datos de la maceta seleccionada
-  useEffect(() => {
-    async function cargarDatos() {
-      setLoading(true);
-      try {
-        const agrupacionValor = (timeRange === '24h' ? '1h' : '1d') as NonNullable<
-          ConsultaMediciones['agrupacion']
-        >;
+  const serie = (tipo: string) => analitica.mediciones?.series.find((s) => s.tipo === tipo)?.puntos ?? [];
+  const puntosSuelo = serie('HUMEDAD_SUELO');
+  const puntosTemp = serie('TEMPERATURA');
+  const riegosEjecutados = analitica.riegos.filter((r) => r.estado === 'EJECUTADO');
+  const humedadProm = promedio(puntosSuelo);
+  const variacionSuelo = puntosSuelo.length >= 2
+    ? puntosSuelo[puntosSuelo.length - 1].valor - puntosSuelo[0].valor
+    : null;
+  const minimosTemp = puntosTemp.map((p) => p.min ?? p.valor);
+  const maximosTemp = puntosTemp.map((p) => p.max ?? p.valor);
+  const segundosBomba = riegosEjecutados.reduce((acc, r) => acc + r.duracionSeg, 0);
+  const umbral = live?.dispositivo?.umbralRiego ?? 35;
+  const conectado = live?.dispositivo?.conectado ?? false;
 
-        const datos = await api.mediciones(`ESP32-M${activePotId.padStart(2, '0')}`, {
-          agrupacion: agrupacionValor,
-        });
-
-        if (datos && Array.isArray(datos) && datos.length > 0) {
-          const sumaHumedad = datos.reduce((acc, curr) => acc + (curr.humedadSuelo ?? 0), 0);
-          setMetricas((prev) => ({
-            ...prev,
-            humedadProm: Number((sumaHumedad / datos.length).toFixed(1)),
-          }));
-        }
-      } catch (err) {
-        console.warn('Usando datos de respaldo para el análisis:', err);
-      } finally {
-        setLoading(false);
+  const kpi = esLive
+    ? {
+        humedadProm: `${fijo(humedadProm)}%`,
+        variacion: variacionSuelo === null ? 'Sin variación' : `${variacionSuelo >= 0 ? '+' : ''}${variacionSuelo.toFixed(1)}% en el periodo`,
+        agua: `${segundosBomba} s`,
+        riegosTotales: riegosEjecutados.length,
+        tempProm: `${fijo(promedio(puntosTemp))} °C`,
+        tempRango: minimosTemp.length
+          ? `Mín: ${Math.min(...minimosTemp).toFixed(1)}°C • Máx: ${Math.max(...maximosTemp).toFixed(1)}°C`
+          : 'Mín: — • Máx: —',
+        conexion: conectado ? 'En línea' : 'Desconectado',
+        conexionBadge: 'API',
       }
-    }
-    cargarDatos();
-  }, [activePotId, timeRange]);
+    : {
+        humedadProm: `${METRICAS_EJEMPLO.humedadProm}%`,
+        variacion: '+3.2% vs prev.',
+        agua: `${METRICAS_EJEMPLO.aguaTotal} L`,
+        riegosTotales: METRICAS_EJEMPLO.riegosTotales,
+        tempProm: `${METRICAS_EJEMPLO.tempProm} °C`,
+        tempRango: 'Mín: 18°C • Máx: 29°C',
+        conexion: '99.1%',
+        conexionBadge: 'RTDB Sync',
+      };
+
+  // Escala de tiempo del rango consultado.
+  const inicio = analitica.desde.getTime();
+  const duracion = Math.max(1, analitica.hasta.getTime() - inicio);
+  const tiempoAX = (fechaIso: string) => Math.min(500, Math.max(0, ((new Date(fechaIso).getTime() - inicio) / duracion) * 500));
+  const puntosGrafica = esLive
+    ? puntosSuelo.map((p) => `${tiempoAX(p.t).toFixed(1)},${valorAY(p.valor).toFixed(1)}`).join(' ')
+    : PUNTOS_EJEMPLO;
+  const pares = puntosGrafica ? puntosGrafica.split(' ') : [];
+  const primerX = pares.length ? pares[0].split(',')[0] : '0';
+  const ultimoX = pares.length ? pares[pares.length - 1].split(',')[0] : '500';
+  const yUmbral = esLive ? valorAY(umbral) : 115;
+  const pulsos = esLive
+    ? riegosEjecutados.slice(0, MAX_PULSOS).map((r) => ({ id: r.id, x: tiempoAX(r.creadoEn), y: 30, etiqueta: `Riego ${r.duracionSeg}s` }))
+    : [
+        { id: 1, x: 150, y: 40, etiqueta: 'Riego +150ml' },
+        { id: 2, x: 350, y: 30, etiqueta: 'Riego +200ml' },
+      ];
 
   return (
     <div className="analytics-view d-flex flex-column gap-4">
@@ -98,8 +140,8 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
               <span className="small text-white fw-bold">Humedad Sustrato Prom.</span>
             </div>
             <div className="d-flex align-items-baseline justify-content-between pb-2 mb-2">
-              <div className="fs-3 fw-bold text-white mb-0">{metricas.humedadProm}%</div>
-              <span className="badge bg-success-subtle text-success fw-normal">+3.2% vs prev.</span>
+              <div className="fs-3 fw-bold text-white mb-0">{kpi.humedadProm}</div>
+              <span className="badge bg-success-subtle text-success fw-normal">{kpi.variacion}</span>
             </div>
             <div className="mt-2 border-top border-secondary border-opacity-25" />
             <span className="d-block mt-2 small text-secondary">Promedio del periodo seleccionado</span>
@@ -116,11 +158,11 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
               <span className="small text-white fw-bold">Agua Suministrada</span>
             </div>
             <div className="d-flex align-items-baseline justify-content-between pb-2 mb-2">
-              <div className="fs-3 fw-bold text-white mb-0">{metricas.aguaTotal} L</div>
-              <span className="small text-secondary">{metricas.riegosTotales} Riegos tot.</span>
+              <div className="fs-3 fw-bold text-white mb-0">{kpi.agua}</div>
+              <span className="small text-secondary">{kpi.riegosTotales} Riegos tot.</span>
             </div>
             <div className="mt-2 border-top border-secondary border-opacity-25" />
-            <span className="d-block mt-2 small text-secondary">Consumo de agua registrado</span>
+            <span className="d-block mt-2 small text-secondary">{esLive ? 'Tiempo total de bomba en el periodo' : 'Consumo de agua registrado'}</span>
           </div>
         </div>
 
@@ -134,8 +176,8 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
               <span className="small text-white fw-bold">Temp. Promedio Aire</span>
             </div>
             <div className="d-flex align-items-baseline justify-content-between pb-2 mb-2">
-              <div className="fs-3 fw-bold text-white mb-0">{metricas.tempProm} °C</div>
-              <span className="small text-secondary">Mín: 18°C • Máx: 29°C</span>
+              <div className="fs-3 fw-bold text-white mb-0">{kpi.tempProm}</div>
+              <span className="small text-secondary">{kpi.tempRango}</span>
             </div>
             <div className="mt-2 border-top border-secondary border-opacity-25" />
             <span className="d-block mt-2 small text-secondary">Rango de temperatura del periodo</span>
@@ -154,11 +196,11 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
               <span className="small text-white fw-bold">Estado de Conexión</span>
             </div>
             <div className="d-flex align-items-baseline justify-content-between pb-2 mb-2">
-              <div className="fs-3 fw-bold text-white mb-0">99.1%</div>
-              <span className="badge bg-primary-subtle text-primary fw-normal">RTDB Sync</span>
+              <div className="fs-3 fw-bold text-white mb-0">{kpi.conexion}</div>
+              <span className="badge bg-primary-subtle text-primary fw-normal">{kpi.conexionBadge}</span>
             </div>
             <div className="mt-2 border-top border-secondary border-opacity-25" />
-            <span className="d-block mt-2 small text-secondary">Disponibilidad de sincronización RTDB</span>
+            <span className="d-block mt-2 small text-secondary">{esLive ? 'Estado reportado por la API' : 'Disponibilidad de sincronización RTDB'}</span>
           </div>
         </div>
       </div>
@@ -183,7 +225,7 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
                 </span>
               </div>
               <span className="small text-secondary" style={{ fontSize: '12px' }}>
-                {loading ? 'Sincronizando...' : 'Actualizado'}
+                {loading ? 'Sincronizando...' : esLive && analitica.error ? analitica.error : 'Actualizado'}
               </span>
             </div>
 
@@ -204,33 +246,43 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
                 <line x1="0" y1="140" x2="500" y2="140" stroke="var(--border-color)" strokeWidth="1" strokeDasharray="2,2" opacity="0.5" />
 
                 {/* Umbral Mínimo Crítico */}
-                <line x1="0" y1="115" x2="500" y2="115" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="4,4" />
-                <text x="5" y="110" fill="#ef4444" fontSize="9" fontWeight="bold">Umbral Crítico (35%)</text>
+                <line x1="0" y1={yUmbral} x2="500" y2={yUmbral} stroke="#ef4444" strokeWidth="1.5" strokeDasharray="4,4" />
+                <text x="5" y={yUmbral - 5} fill="#ef4444" fontSize="9" fontWeight="bold">
+                  {esLive ? `Umbral de Riego (${umbral}%)` : 'Umbral Crítico (35%)'}
+                </text>
 
-                {/* Relleno con Degradado */}
-                <polygon
-                  fill="url(#moistureGradient)"
-                  points="0,110 50,90 100,105 150,40 200,65 250,50 300,85 350,30 400,60 450,45 500,55 500,150 0,150"
-                />
+                {puntosGrafica ? (
+                  <>
+                    {/* Relleno con Degradado */}
+                    <polygon
+                      fill="url(#moistureGradient)"
+                      points={`${puntosGrafica} ${ultimoX},150 ${primerX},150`}
+                    />
 
-                {/* Curva Principal */}
-                <polyline
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  points="0,110 50,90 100,105 150,40 200,65 250,50 300,85 350,30 400,60 450,45 500,55"
-                />
+                    {/* Curva Principal */}
+                    <polyline
+                      fill="none"
+                      stroke="#10b981"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={puntosGrafica}
+                    />
+                  </>
+                ) : (
+                  <text x="250" y="80" fill="var(--text-secondary)" fontSize="11" textAnchor="middle">
+                    {loading ? 'Cargando mediciones…' : 'Sin mediciones de humedad del suelo en este periodo'}
+                  </text>
+                )}
 
                 {/* Pulsos de Riego */}
-                <line x1="150" y1="40" x2="150" y2="150" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="3,3" />
-                <circle cx="150" cy="40" r="5" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
-                <text x="130" y="28" fill="#0284c7" fontSize="9" fontWeight="bold">Riego +150ml</text>
-
-                <line x1="350" y1="30" x2="350" y2="150" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="3,3" />
-                <circle cx="350" cy="30" r="5" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
-                <text x="330" y="18" fill="#0284c7" fontSize="9" fontWeight="bold">Riego +200ml</text>
+                {pulsos.map((pulso) => (
+                  <g key={pulso.id}>
+                    <line x1={pulso.x} y1={pulso.y} x2={pulso.x} y2="150" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="3,3" />
+                    <circle cx={pulso.x} cy={pulso.y} r="5" fill="#0284c7" stroke="#ffffff" strokeWidth="2" />
+                    <text x={Math.min(450, Math.max(0, pulso.x - 20))} y={pulso.y - 12} fill="#0284c7" fontSize="9" fontWeight="bold">{pulso.etiqueta}</text>
+                  </g>
+                ))}
               </svg>
             </div>
 
@@ -271,6 +323,9 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
             >
               {potsList.map((p) => {
                 const isSelected = p.id === activePotId;
+                const esPotLive = live !== undefined && p.id === '01';
+                // El rango de riegos solo se consulta para la maceta activa; si no, se usan los ciclos de 24 h.
+                const ciclos = esPotLive && esLive ? riegosEjecutados.length : p.waterCycles ?? 0;
                 return (
                   <button
                     key={p.id}
@@ -286,12 +341,12 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot }: Analytic
                       <span className={`analytics-pot-label fw-semibold${isSelected ? ' is-active' : ''}`}>
                         {p.name}
                       </span>
-                      <span className="fw-bold">{p.waterDispensed ?? '350 ml'}</span>
+                      <span className="fw-bold">{esPotLive ? `${ciclos} riegos` : p.waterDispensed ?? '350 ml'}</span>
                     </div>
                     <div className="progress" style={{ height: '6px', backgroundColor: 'var(--bg-card)' }}>
                       <div
                         className={`progress-bar analytics-pot-progress ${isSelected ? 'is-active' : 'bg-secondary'} rounded-3`}
-                        style={{ width: p.id === '01' ? '45%' : p.id === '02' ? '30%' : '25%' }}
+                        style={{ width: esPotLive ? `${Math.min(100, ciclos * 10)}%` : p.id === '01' ? '45%' : p.id === '02' ? '30%' : '25%' }}
                       ></div>
                     </div>
                   </button>

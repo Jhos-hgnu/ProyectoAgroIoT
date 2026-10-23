@@ -20,6 +20,8 @@ export interface PotData {
   reservoirPercent: number | null;
   status: 'Optimal' | 'Stable' | 'Deficit';
   isLoading?: boolean;
+  /** Solo en macetas conectadas a la API: dispositivo.conectado. */
+  online?: boolean;
 }
 
 export const POTS_DATA: Record<string, PotData> = {

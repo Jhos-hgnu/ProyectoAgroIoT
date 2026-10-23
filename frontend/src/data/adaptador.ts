@@ -1,6 +1,20 @@
 import type { Alerta, Dispositivo, Mediciones, Riego } from '../types/contrato';
 import type { PotData } from './potsData';
 
+/** La API vence los riegos sin confirmar a los 2 min, pero solo al crear o entregar otro comando. */
+const VENCIMIENTO_RIEGO_MS = 2 * 60 * 1000;
+
+/** Riego PENDIENTE o ENVIADO que todavía no venció. Uno abierto de hace más de 2 min ya no bloquea. */
+export function riegoAbierto(riego: Riego | null | undefined, ahora = Date.now()): boolean {
+  if (!riego || (riego.estado !== 'PENDIENTE' && riego.estado !== 'ENVIADO')) return false;
+  return ahora - new Date(riego.creadoEn).getTime() < VENCIMIENTO_RIEGO_MS;
+}
+
+/** Riego abierto que ya pasó los 2 min: la API lo marcará EXPIRADO en la siguiente operación. */
+export function riegoVencido(riego: Riego | null | undefined, ahora = Date.now()): boolean {
+  return !!riego && (riego.estado === 'PENDIENTE' || riego.estado === 'ENVIADO') && !riegoAbierto(riego, ahora);
+}
+
 function valorSensor(dispositivo: Dispositivo, tipo: string): number | null {
   return dispositivo.sensores.find((sensor) => sensor.tipo === tipo)?.ultimoValor ?? null;
 }
@@ -60,6 +74,7 @@ export function adaptarMaceta(
     waterCycles,
     waterReservoir: null,
     reservoirPercent: null,
+    online: dispositivo.conectado,
     status: tieneAlertaImportante ? 'Deficit' : alertas.length ? 'Stable' : 'Optimal',
   };
 }

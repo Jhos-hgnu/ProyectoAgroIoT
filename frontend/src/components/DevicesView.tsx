@@ -1,14 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { PotData } from '../data/potsData';
+import type { Dispositivo, DispositivoPatch } from '../types/contrato';
+import { Proximamente } from './Proximamente';
+import { estadoFirebase, type UseSalud } from '../hooks/useSalud';
 
 interface DevicesViewProps {
   potsList: PotData[];
   onAddPot: (newPot: PotData) => void;
   selectedPotId: string;
   onSelectPot: (potId: string) => void;
+  /** Datos reales de maceta-01. */
+  live?: {
+    dispositivo: Dispositivo | null;
+    guardandoConfig: boolean;
+    actualizarConfig: (cambios: DispositivoPatch) => Promise<boolean>;
+  };
+  /** Estado de la API y Firebase (GET /salud). */
+  salud?: UseSalud;
 }
 
-export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesViewProps) {
+const esEnLinea = (pot: PotData) => pot.online ?? !pot.isLoading;
+
+export function DevicesView({ potsList, selectedPotId, onSelectPot, live, salud }: DevicesViewProps) {
+  const firebase = salud ? estadoFirebase(salud) : null;
+  const latencia = salud?.latenciaMs === null || salud?.latenciaMs === undefined ? '—' : `${salud.latenciaMs} ms`;
+  const baseDatos = salud?.salud ? (salud.salud.baseDatos === 'OK' ? 'OK' : 'Error') : '—';
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'ALL' | 'ONLINE' | 'OFFLINE'>('ALL');
   const [flashLed, setFlashLed] = useState(false);
@@ -19,6 +35,33 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
   const [pumpCalibValue, setPumpCalibValue] = useState('11.3');
 
   const selectedPot = potsList.find((p) => p.id === selectedPotId) || potsList[0];
+  const dispositivoLive = live && selectedPot?.id === '01' ? live.dispositivo : null;
+  const [duracionEditada, setDuracionEditada] = useState('');
+
+  // Al cambiar de maceta se cierra la edición para no guardar valores de otra.
+  useEffect(() => {
+    setIsEditingCalibration(false);
+  }, [selectedPotId]);
+
+  const iniciarEdicion = () => {
+    if (dispositivoLive) setDuracionEditada(String(dispositivoLive.duracionRiegoSeg));
+    setIsEditingCalibration(true);
+  };
+
+  const guardarCalibracion = async () => {
+    if (live && dispositivoLive) {
+      const duracion = Number(duracionEditada);
+      if (!Number.isInteger(duracion) || duracion < 1 || duracion > 60) {
+        window.alert('La duración del riego debe ser un número entero entre 1 y 60 segundos.');
+        return;
+      }
+      if (duracion !== dispositivoLive.duracionRiegoSeg) {
+        const ok = await live.actualizarConfig({ duracionRiegoSeg: duracion });
+        if (!ok) return;
+      }
+    }
+    setIsEditingCalibration(false);
+  };
 
   const filteredPots = potsList.filter((pot) => {
     const matchesSearch =
@@ -26,14 +69,14 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
       (pot.crop && pot.crop.toLowerCase().includes(searchTerm.toLowerCase())) ||
       pot.number.includes(searchTerm);
 
-    const isOnline = !pot.isLoading;
+    const isOnline = esEnLinea(pot);
     if (filterStatus === 'ONLINE') return matchesSearch && isOnline;
     if (filterStatus === 'OFFLINE') return matchesSearch && !isOnline;
     return matchesSearch;
   });
 
   const totalNodes = potsList.length;
-  const onlineNodes = potsList.filter((p) => !p.isLoading).length;
+  const onlineNodes = potsList.filter(esEnLinea).length;
 
   return (
     <div className="devices-view d-flex flex-column gap-3 text-white">
@@ -173,9 +216,9 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                 <circle cx="68" cy="16" r="3" fill="#38BDF8" />
               </svg>
             </div>
-            <div className="fs-3 fw-bold text-white mb-2">-62 dBm</div>
+            <div className="fs-3 fw-bold text-white mb-2">{salud ? <Proximamente /> : '-62 dBm'}</div>
             <div className="device-widget-footer pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
-              Latencia: 42ms (Óptima)
+              {salud ? `Latencia API: ${latencia}` : 'Latencia: 42ms (Óptima)'}
             </div>
           </div>
         </div>
@@ -197,9 +240,9 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                 <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831" fill="none" stroke="#38BDF8" strokeWidth="5" strokeDasharray="80, 100" />
               </svg>
             </div>
-            <div className="fs-3 fw-bold text-white mb-2">v1.2.0</div>
+            <div className="fs-3 fw-bold text-white mb-2">{salud ? <Proximamente /> : 'v1.2.0'}</div>
             <div className="device-widget-footer pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
-              Estado: Sincronizado
+              {salud ? 'El ESP32 aún no reporta su versión' : 'Estado: Sincronizado'}
             </div>
           </div>
         </div>
@@ -217,13 +260,13 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                 <span className="text-white small fw-bold" style={{ fontSize: '12px', letterSpacing: '0.5px' }}>FIREBASE RTDB</span>
               </div>
               <div className="position-relative d-flex align-items-center justify-content-center" style={{ width: '26px', height: '26px' }}>
-                <span className="position-absolute w-100 h-100 rounded-circle bg-success opacity-25 animate-ping"></span>
-                <span className="position-relative rounded-circle bg-success" style={{ width: '12px', height: '12px' }}></span>
+                <span className="position-absolute w-100 h-100 rounded-circle opacity-25 animate-ping" style={{ backgroundColor: firebase?.color ?? '#10B981' }}></span>
+                <span className="position-relative rounded-circle" style={{ width: '12px', height: '12px', backgroundColor: firebase?.color ?? '#10B981' }}></span>
               </div>
             </div>
-            <div className="fs-3 fw-bold text-white mb-2">120 ms</div>
+            <div className="fs-3 fw-bold text-white mb-2">{firebase ? firebase.texto : '120 ms'}</div>
             <div className="device-widget-footer pt-2 border-top border-secondary border-opacity-25 small text-secondary" style={{ fontSize: '12px' }}>
-              Websockets: Conectado
+              {firebase ? `Base de datos: ${baseDatos} • API: ${latencia}` : 'Websockets: Conectado'}
             </div>
           </div>
         </div>
@@ -261,7 +304,8 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                 <tbody>
                   {filteredPots.map((pot) => {
                     const isSelected = pot.id === selectedPotId;
-                    const isOnline = !pot.isLoading;
+                    const isOnline = esEnLinea(pot);
+                    const esLive = live !== undefined && pot.id === '01';
 
                     return (
                       <tr
@@ -273,14 +317,20 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                         <td className="bg-transparent border-0 py-3">
                           <div className="fw-bold text-white" style={{ fontSize: '14px' }}>{pot.name}</div>
                           <div className="small text-secondary" style={{ fontSize: '12px' }}>
-                            ID: #ESP32-M{pot.number} — {pot.zone || 'ZONA A'}
+                            ID: {esLive ? live.dispositivo?.id ?? 'maceta-01' : `#ESP32-M${pot.number}`} — {pot.zone || (esLive ? 'Sin ubicación' : 'ZONA A')}
                           </div>
                         </td>
                         <td className="bg-transparent border-0 py-3">
-                          <div className="text-info small fw-bold">192.168.1.10{pot.number}</div>
-                          <div className="small text-secondary font-monospace" style={{ fontSize: '11px' }}>
-                            A4:CF:12:89:55:0{pot.number}
-                          </div>
+                          {esLive ? (
+                            <Proximamente />
+                          ) : (
+                            <>
+                              <div className="text-info small fw-bold">192.168.1.10{pot.number}</div>
+                              <div className="small text-secondary font-monospace" style={{ fontSize: '11px' }}>
+                                A4:CF:12:89:55:0{pot.number}
+                              </div>
+                            </>
+                          )}
                         </td>
                         <td className="bg-transparent border-0 py-3" style={{ minWidth: '140px' }}>
                           <div className="d-flex justify-content-between align-items-center mb-1">
@@ -288,7 +338,7 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                               {isOnline ? 'En línea' : 'Desconectado'}
                             </span>
                             <span className="small text-secondary" style={{ fontSize: '11px' }}>
-                              {isOnline ? '-58 dBm' : '0 dBm'}
+                              {esLive ? <Proximamente /> : isOnline ? '-58 dBm' : '0 dBm'}
                             </span>
                           </div>
                           <div className="progress" style={{ height: '4px', backgroundColor: 'rgba(255,255,255,0.1)' }}>
@@ -304,7 +354,7 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                           </div>
                         </td>
                         <td className="bg-transparent border-0 py-3">
-                          <div className="small fw-semibold text-white">{pot.battery || '92% (Red)'}</div>
+                          <div className="small fw-semibold text-white">{esLive ? <Proximamente /> : pot.battery || '92% (Red)'}</div>
                         </td>
                       </tr>
                     );
@@ -330,11 +380,11 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                   </div>
                   <div>
                     <h6 className="fw-bold m-0 text-white" style={{ fontSize: '15px' }}>{selectedPot.name}</h6>
-                    <span className="small text-secondary" style={{ fontSize: '11px' }}>ID Hardware: #ESP32-M{selectedPot.number}</span>
+                    <span className="small text-secondary" style={{ fontSize: '11px' }}>ID Hardware: {dispositivoLive ? dispositivoLive.id : `#ESP32-M${selectedPot.number}`}</span>
                   </div>
                 </div>
-                <span className={`badge ${!selectedPot.isLoading ? 'bg-success' : 'bg-secondary'} px-2 py-1`}>
-                  {!selectedPot.isLoading ? 'Activo' : 'Inactivo'}
+                <span className={`badge ${esEnLinea(selectedPot) ? 'bg-success' : 'bg-secondary'} px-2 py-1`}>
+                  {esEnLinea(selectedPot) ? 'Activo' : 'Inactivo'}
                 </span>
               </div>
 
@@ -385,7 +435,7 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                       type="button"
                       className="btn btn-sm btn-outline-light calibration-edit-button py-1 px-3"
                       style={{ fontSize: '11px', borderRadius: '6px' }}
-                      onClick={() => setIsEditingCalibration(true)}
+                      onClick={iniciarEdicion}
                     >
                       Editar
                     </button>
@@ -394,9 +444,10 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                       type="button"
                       className="btn btn-sm btn-success calibration-edit-button py-1 px-3"
                       style={{ fontSize: '11px', borderRadius: '6px' }}
-                      onClick={() => setIsEditingCalibration(false)}
+                      onClick={() => void guardarCalibracion()}
+                      disabled={live?.guardandoConfig === true}
                     >
-                      Guardar
+                      {live?.guardandoConfig ? 'Guardando…' : 'Guardar'}
                     </button>
                   )}
                 </div>
@@ -419,7 +470,26 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot }: DevicesVie
                   <div className="p-3 rounded-2 border border-white border-opacity-10" style={{ backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
                     <div className="d-flex justify-content-between align-items-center">
                       <span className="small text-white fw-medium" style={{ fontSize: '13px' }}>Bomba de Riego (Peristáltica)</span>
-                      {!isEditingCalibration ? (
+                      {dispositivoLive && !dispositivoLive.tieneBomba ? (
+                        <span className="small text-secondary fw-bold" style={{ fontSize: '13px' }}>Sin bomba</span>
+                      ) : dispositivoLive ? (
+                        !isEditingCalibration ? (
+                          <span className="small text-info fw-bold" style={{ fontSize: '13px' }}>{dispositivoLive.duracionRiegoSeg} s/riego</span>
+                        ) : (
+                          <div className="d-flex align-items-center gap-1">
+                            <input
+                              type="number"
+                              min={1}
+                              max={60}
+                              className="form-control text-white text-center border-white border-opacity-25 py-0 px-1"
+                              style={{ backgroundColor: '#0A0F1D', width: '60px', height: '26px', fontSize: '12px' }}
+                              value={duracionEditada}
+                              onChange={(e) => setDuracionEditada(e.target.value)}
+                            />
+                            <span className="small text-secondary" style={{ fontSize: '11px' }}>s/riego</span>
+                          </div>
+                        )
+                      ) : !isEditingCalibration ? (
                         <span className="small text-info fw-bold" style={{ fontSize: '13px' }}>{pumpCalibValue} ml/10s</span>
                       ) : (
                         <div className="d-flex align-items-center gap-1">
