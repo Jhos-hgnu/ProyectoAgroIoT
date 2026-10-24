@@ -56,18 +56,19 @@ export function useMaceta(dispositivoId = 'maceta-01', intervaloNormal = INTERVA
   const [actualizadoEn, setActualizadoEn] = useState<Date | null>(null);
   const [solicitandoRiego, setSolicitandoRiego] = useState(false);
   const [guardandoConfig, setGuardandoConfig] = useState(false);
-  const enVuelo = useRef(false);
+  const enVuelo = useRef<string | null>(null);
+  const idActual = useRef(dispositivoId);
   const enviandoRiego = useRef(false);
   const refrescarPendiente = useRef(false);
   const ultimaConsultaMediciones = useRef(0);
 
   const cargar = useCallback(async function cargarMaceta() {
-    if (enVuelo.current) {
+    if (enVuelo.current === dispositivoId) {
       refrescarPendiente.current = true;
       return;
     }
     if (document.visibilityState === 'hidden') return;
-    enVuelo.current = true;
+    enVuelo.current = dispositivoId;
 
     const consultarMediciones = Date.now() - ultimaConsultaMediciones.current >= INTERVALO_MEDICIONES;
     if (consultarMediciones) ultimaConsultaMediciones.current = Date.now();
@@ -89,6 +90,11 @@ export function useMaceta(dispositivoId = 'maceta-01', intervaloNormal = INTERVA
       : Promise.resolve(null);
 
     const [resultados, resultadoMediciones] = await Promise.all([consultasPrincipales, consultaMediciones]);
+    if (idActual.current !== dispositivoId) {
+      // El usuario cambió de maceta mientras esta consulta estaba en vuelo: su resultado ya no sirve.
+      if (enVuelo.current === dispositivoId) enVuelo.current = null;
+      return;
+    }
     const errores: string[] = [];
     const [dispositivo, riegos, alertas] = resultados;
     const huboRespuesta = resultados.some((resultado) => resultado.status === 'fulfilled')
@@ -125,7 +131,7 @@ export function useMaceta(dispositivoId = 'maceta-01', intervaloNormal = INTERVA
     if (huboRespuesta) setActualizadoEn(new Date());
     setError(errores.length ? [...new Set(errores)].join(' ') : null);
     setCargando(false);
-    enVuelo.current = false;
+    enVuelo.current = null;
     if (refrescarPendiente.current) {
       refrescarPendiente.current = false;
       void cargarMaceta();
@@ -136,6 +142,18 @@ export function useMaceta(dispositivoId = 'maceta-01', intervaloNormal = INTERVA
     void cargar();
   }, [cargar]);
   const riegoEnCurso = riegoAbierto(snapshot.riegos[0]);
+
+  // Al cambiar de maceta se descarta el estado de la anterior para no mostrar sus datos en la nueva.
+  useEffect(() => {
+    if (idActual.current === dispositivoId) return;
+    idActual.current = dispositivoId;
+    refrescarPendiente.current = false;
+    ultimaConsultaMediciones.current = 0;
+    setSnapshot({ dispositivo: null, riegos: [], alertas: [], mediciones: null });
+    setCargando(true);
+    setError(null);
+    setActualizadoEn(null);
+  }, [dispositivoId]);
 
   useEffect(() => {
     void cargar();

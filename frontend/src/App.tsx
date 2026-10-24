@@ -3,9 +3,10 @@ import { Layout } from "./components/Layout";
 import { Login } from "./components/Login";
 import { OverviewView } from "./components/Overview/OverviewView";
 import { DevicesView } from "./components/DevicesView";
-import { POTS_DATA } from "./data/potsData";
+import { adaptarMaceta } from "./data/adaptador";
 import type { PotData } from "./data/potsData";
 import { useMaceta } from "./hooks/useMaceta";
+import { useDispositivos } from "./hooks/useDispositivos";
 import { AlertsView } from "./components/AlertsView";
 import { SettingsView } from "./components/SettingsView";
 import type { UserProfile } from "./components/SettingsView";
@@ -13,28 +14,7 @@ import { AnalyticsView } from "./components/AnalyticsView";
 import { notificacionesDeMaceta } from "./data/notificaciones";
 import { useSalud } from "./hooks/useSalud";
 import { useNotificacionesWeb } from "./hooks/useNotificacionesWeb";
-
-const POT_01_LOADING: PotData = {
-  ...POTS_DATA["01"],
-  name: "Maceta 01",
-  crop: null,
-  zone: null,
-  sector: null,
-  battery: null,
-  soilMoisture: null,
-  vwcRange: null,
-  airTemp: null,
-  tempMin: null,
-  tempMax: null,
-  airHumidity: null,
-  dpv: null,
-  solarExposure: null,
-  waterDispensed: null,
-  waterCycles: null,
-  waterReservoir: null,
-  reservoirPercent: null,
-  isLoading: true,
-};
+import type { DispositivoCrear } from "./types/contrato";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -46,22 +26,28 @@ function App() {
   return <Dashboard onLogout={() => setIsAuthenticated(false)} />;
 }
 
+/** Id de la maceta que se muestra mientras la lista no ha cargado (la primera del esquema inicial). */
+const MACETA_INICIAL = "maceta-01";
+
 function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [activeTab, setActiveTab] = useState("overview");
-  const [potsList, setPotsList] = useState<PotData[]>(Object.values(POTS_DATA));
-  const [selectedPotId, setSelectedPotId] = useState("01");
+  const lista = useDispositivos();
+  // null = la primera de la lista.
+  const [seleccionada, setSeleccionada] = useState<string | null>(null);
   const [profile, setProfile] = useState<UserProfile>({
     name: 'Elena R.',
     role: 'Ing. Agrónoma',
   });
   // Frecuencia de consulta elegida en Configuración (segundos).
   const [syncIntervalSeg, setSyncIntervalSeg] = useState(5);
-  const maceta01 = useMaceta('maceta-01', syncIntervalSeg * 1000);
-  const notificaciones = maceta01.dispositivo
-    ? notificacionesDeMaceta(maceta01.dispositivo.nombre, maceta01.alertas, maceta01.riegos, maceta01.conectado)
+  const selectedPotId = seleccionada ?? lista.dispositivos[0]?.id ?? MACETA_INICIAL;
+  // Datos en vivo (riegos, alertas, mediciones) de la maceta seleccionada.
+  const maceta = useMaceta(selectedPotId, syncIntervalSeg * 1000);
+  const notificaciones = maceta.dispositivo
+    ? notificacionesDeMaceta(maceta.dispositivo.nombre, maceta.alertas, maceta.riegos, maceta.conectado)
     : [];
   const salud = useSalud();
-  const notificacionesWeb = useNotificacionesWeb(maceta01.alertas, maceta01.dispositivo?.nombre ?? "Maceta 01");
+  const notificacionesWeb = useNotificacionesWeb(maceta.alertas, maceta.dispositivo?.nombre ?? "Maceta");
 
   // Estado global para el tema seleccionado
   const [theme, setTheme] = useState<'dark' | 'light' | 'coquette'>(() => {
@@ -74,13 +60,17 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     localStorage.setItem('agrolot-theme', theme);
   }, [theme]);
 
-  const handleAddPot = (newPot: PotData) => {
-    setPotsList((prev) => [...prev, newPot]);
-    setSelectedPotId(newPot.id);
+  // Crea la maceta en la API y la selecciona. Si falla, el error llega al modal.
+  const handleAddPot = async (datos: DispositivoCrear) => {
+    const nueva = await lista.crear(datos);
+    setSeleccionada(nueva.id);
   };
 
-  const potsActualizadas = potsList.map((pot) =>
-    pot.id === "01" ? (maceta01.pot ?? POT_01_LOADING) : pot,
+  // La seleccionada usa los datos completos de useMaceta; las demás, lo que trae la lista.
+  const potsActualizadas: PotData[] = lista.dispositivos.map((dispositivo) =>
+    dispositivo.id === selectedPotId && maceta.pot
+      ? maceta.pot
+      : adaptarMaceta(dispositivo, [], [], null),
   );
 
   const macetaSeleccionada = potsActualizadas.find(
@@ -94,46 +84,46 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       setActiveTab={setActiveTab}
       potsList={potsActualizadas}
       selectedPotId={selectedPotId}
-      onSelectPot={setSelectedPotId}
+      onSelectPot={setSeleccionada}
       onAddPot={handleAddPot}
       profile={profile}
       notificaciones={notificaciones}
-      esp32Conectado={maceta01.dispositivo ? maceta01.conectado : null}
+      esp32Conectado={maceta.dispositivo ? maceta.conectado : null}
       salud={salud}
     >
       {/* VISTA OVERVIEW */}
       {activeTab === "overview" &&
-        (selectedPotId === "01" && !maceta01.pot ? (
+        (!macetaSeleccionada ? (
           <div
             className="alert alert-dark border-secondary border-opacity-25 text-white"
             role="status"
           >
-            {maceta01.cargando ? (
-              "Conectando con la API de Maceta 01…"
+            {lista.cargando ? (
+              "Conectando con la API…"
             ) : (
               <>
                 <p className="mb-2">
-                  {maceta01.error ?? "No hay datos disponibles para Maceta 01."}
+                  {lista.error ?? "No hay macetas registradas todavía."}
                 </p>
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-light"
-                  onClick={maceta01.refrescar}
+                  onClick={lista.refrescar}
                 >
                   Reintentar conexión
                 </button>
               </>
             )}
           </div>
-        ) : macetaSeleccionada ? (
+        ) : (
           <OverviewView
             pot={macetaSeleccionada}
             potsList={potsActualizadas}
             selectedPotId={selectedPotId}
-            onSelectPot={setSelectedPotId}
-            live={selectedPotId === "01" ? maceta01 : undefined}
+            onSelectPot={setSeleccionada}
+            live={maceta}
           />
-        ) : null)}
+        ))}
 
       {/* VISTA DE GESTIÓN DE DISPOSITIVOS */}
       {activeTab === "devices" && (
@@ -141,11 +131,11 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           potsList={potsActualizadas}
           onAddPot={handleAddPot}
           selectedPotId={selectedPotId}
-          onSelectPot={setSelectedPotId}
+          onSelectPot={setSeleccionada}
           live={{
-            dispositivo: maceta01.dispositivo,
-            guardandoConfig: maceta01.guardandoConfig,
-            actualizarConfig: maceta01.actualizarConfig,
+            dispositivo: maceta.dispositivo,
+            guardandoConfig: maceta.guardandoConfig,
+            actualizarConfig: maceta.actualizarConfig,
           }}
           salud={salud}
         />
@@ -156,10 +146,12 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <AlertsView
           potsList={potsActualizadas}
           live={{
-            alertas: maceta01.alertas,
-            tieneBomba: maceta01.tieneBomba,
-            resolverAlerta: maceta01.resolverAlerta,
-            regar: () => maceta01.regar(),
+            potId: selectedPotId,
+            nombre: maceta.dispositivo?.nombre ?? macetaSeleccionada?.name ?? selectedPotId,
+            alertas: maceta.alertas,
+            tieneBomba: maceta.tieneBomba,
+            resolverAlerta: maceta.resolverAlerta,
+            regar: () => maceta.regar(),
           }}
           notificacionesWeb={notificacionesWeb}
         />
@@ -174,8 +166,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           onProfileSave={setProfile}
           syncIntervalSeg={syncIntervalSeg}
           onSyncIntervalChange={setSyncIntervalSeg}
-          riegoAutomatico={maceta01.dispositivo?.riegoAutomatico ?? null}
-          onRiegoAutomaticoChange={(activo) => maceta01.actualizarConfig({ riegoAutomatico: activo })}
+          riegoAutomatico={maceta.dispositivo?.riegoAutomatico ?? null}
+          onRiegoAutomaticoChange={(activo) => maceta.actualizarConfig({ riegoAutomatico: activo })}
         />
       )}
 
@@ -184,8 +176,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <AnalyticsView
           potsList={potsActualizadas}
           selectedPotId={selectedPotId}
-          onSelectPot={setSelectedPotId}
-          live={{ dispositivo: maceta01.dispositivo }}
+          onSelectPot={setSeleccionada}
+          live={{ dispositivo: maceta.dispositivo }}
         />
       )}
 

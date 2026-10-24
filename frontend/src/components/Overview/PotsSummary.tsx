@@ -102,7 +102,7 @@ export const PotsSummary: React.FC<PotsSummaryProps> = ({
                     <small style={{ fontSize: '11px', color: isSelected ? '#10B981' : statusColor }}>
                       {isSelected ? 'Nodo seleccionado · ' : (
                         <>
-                          {pot.zone ?? (pot.id === '01' && !pot.isLoading ? 'Sin ubicación' : 'Ubicación pendiente')}
+                          {pot.zone ?? (pot.online !== undefined ? 'Sin ubicación' : 'Ubicación pendiente')}
                           {' · '}
                         </>
                       )}

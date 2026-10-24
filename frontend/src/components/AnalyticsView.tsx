@@ -7,7 +7,7 @@ interface AnalyticsViewProps {
   potsList: PotData[];
   selectedPotId: string;
   onSelectPot: (potId: string) => void;
-  /** Datos reales de maceta-01; las demás macetas conservan sus datos de ejemplo. */
+  /** Datos reales de la maceta seleccionada. */
   live?: { dispositivo: Dispositivo | null };
 }
 
@@ -40,9 +40,10 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot, live }: An
   // Maceta actualmente activa
   const currentPot = potsList.find((p) => p.id === activePotId) ?? potsList[0];
 
-  // Solo maceta-01 consulta la API.
-  const esLive = live !== undefined && currentPot?.id === '01';
-  const analitica = useAnalitica(esLive ? live.dispositivo?.id ?? 'maceta-01' : null, timeRange);
+  // Solo la maceta seleccionada (la que tiene datos en vivo) consulta la API.
+  const idLive = live?.dispositivo?.id !== undefined && live.dispositivo.id === currentPot?.id ? currentPot.id : null;
+  const esLive = idLive !== null;
+  const analitica = useAnalitica(idLive, timeRange);
   const loading = esLive && analitica.cargando;
 
   const serie = (tipo: string) => analitica.mediciones?.series.find((s) => s.tipo === tipo)?.puntos ?? [];
@@ -323,7 +324,7 @@ export function AnalyticsView({ potsList, selectedPotId, onSelectPot, live }: An
             >
               {potsList.map((p) => {
                 const isSelected = p.id === activePotId;
-                const esPotLive = live !== undefined && p.id === '01';
+                const esPotLive = live?.dispositivo?.id === p.id;
                 // El rango de riegos solo se consulta para la maceta activa; si no, se usan los ciclos de 24 h.
                 const ciclos = esPotLive && esLive ? riegosEjecutados.length : p.waterCycles ?? 0;
                 return (

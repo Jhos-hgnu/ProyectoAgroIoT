@@ -1,4 +1,4 @@
-import type { Alerta, ConsultaMediciones, Dispositivo, DispositivoPatch, ErrorApi, FiltroAlertas, Mediciones, Reporte, ReporteRequest, ReporteResumen, Riego, RiegoRequest, Salud, } from '../types/contrato'
+import type { Alerta, ConsultaMediciones, Dispositivo, DispositivoCrear, DispositivoPatch, ErrorApi, FiltroAlertas, Mediciones, Reporte, ReporteRequest, ReporteResumen, Riego, RiegoRequest, Salud, } from '../types/contrato'
 
 const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api').replace(/\/+$/, '')
 
@@ -57,6 +57,11 @@ const id = encodeURIComponent
 
 export const api = {
   salud: () => pedir<Salud>('/salud'),
+
+  dispositivos: () => pedir<Dispositivo[]>('/dispositivos'),
+
+  crearDispositivo: (datos: DispositivoCrear) =>
+    pedir<Dispositivo>('/dispositivos', { method: 'POST', body: JSON.stringify(datos) }),
 
   dispositivo: (dispositivoId: string) => pedir<Dispositivo>(`/dispositivos/${id(dispositivoId)}`),
 

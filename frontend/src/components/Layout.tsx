@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { AddPotModal } from './Overview/AddPotModal';
 import type { PotData } from '../data/potsData';
+import type { DispositivoCrear } from '../types/contrato';
 import type { UserProfile } from './SettingsView';
 import type { Notificacion } from './NotificationsDropdown';
 import type { UseSalud } from '../hooks/useSalud';
@@ -15,7 +16,7 @@ interface LayoutProps {
   selectedPotId: string;
   onSelectPot: (id: string) => void;
   potsList: PotData[];
-  onAddPot: (pot: PotData) => void;
+  onAddPot: (datos: DispositivoCrear) => Promise<void>;
   profile: UserProfile;
   notificaciones?: Notificacion[];
   esp32Conectado?: boolean | null;
@@ -58,12 +59,14 @@ export const Layout: React.FC<LayoutProps> = ({
         </main>
       </div>
 
+      {isAddPotModalOpen && (
       <AddPotModal 
         isOpen={isAddPotModalOpen} 
         onClose={() => setIsAddPotModalOpen(false)} 
         onAddPot={onAddPot} 
-        nextPotNumber={potsList.length + 1}
+        nextPotNumber={Math.max(0, ...potsList.map((p) => Number(p.number) || 0)) + 1}
       />
+      )}
     </div>
   );
 };

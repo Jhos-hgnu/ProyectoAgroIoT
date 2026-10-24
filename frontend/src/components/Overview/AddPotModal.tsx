@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import type { PotData } from '../../data/potsData';
+import type { DispositivoCrear } from '../../types/contrato';
 
 interface AddPotModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddPot: (newPotData: PotData) => void;
+  /** Registra la maceta en la API; si lanza, el modal queda abierto y muestra el mensaje. */
+  onAddPot: (datos: DispositivoCrear) => Promise<void>;
   nextPotNumber: number;
 }
 
@@ -15,43 +16,33 @@ export const AddPotModal: React.FC<AddPotModalProps> = ({
   nextPotNumber 
 }) => {
   const formattedNumber = nextPotNumber.toString().padStart(2, '0');
-  const autoSensorId = `ESP32-NODE-${formattedNumber}`;
+  const autoSensorId = `maceta-${formattedNumber}`;
 
   const [crop, setCrop] = useState('');
   const [zone, setZone] = useState('ZONA A');
   const [sector, setSector] = useState('SECTOR #1');
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!crop.trim()) return;
+    if (!crop.trim() || guardando) return;
 
-    onAddPot({
-      id: formattedNumber,
-      number: formattedNumber,
-      name: `Maceta ${formattedNumber} — ${crop.trim()}`,
-      crop: crop.trim(),
-      zone: zone,
-      sector: sector,
-      battery: '100% (Nueva Conexión)',
-      soilMoisture: 65,
-      vwcRange: '60-80%',
-      airTemp: 24.0,
-      tempMin: 18.0,
-      tempMax: 28.0,
-      airHumidity: 60,
-      dpv: 1.0,
-      solarExposure: '40.0k',
-      waterDispensed: '0.00 Litros',
-      waterCycles: 0,
-      waterReservoir: '5.0L / 5.0L',
-      reservoirPercent: 100,
-      status: 'Optimal',
-    });
-
-    setCrop('');
-    onClose();
+    setGuardando(true);
+    setError(null);
+    try {
+      await onAddPot({ cultivo: crop.trim(), zona: zone, sector });
+      setCrop('');
+      onClose();
+    } catch (errorApi) {
+      setError(errorApi instanceof TypeError
+        ? 'No se puede conectar con la API. Intenta de nuevo.'
+        : errorApi instanceof Error ? errorApi.message : 'No se pudo guardar la maceta.');
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
@@ -184,7 +175,7 @@ export const AddPotModal: React.FC<AddPotModalProps> = ({
 
             <div>
               <label className="form-label fw-semibold mb-1" style={{ fontSize: '11px', color: '#CBD5E1' }}>
-                ID DISPOSITIVO ESP32 (ASIGNADO AUTOMÁTICAMENTE)
+                ID DEL DISPOSITIVO (DISPOSITIVO_ID DEL ESP32)
               </label>
               <input 
                 type="text" 
@@ -197,12 +188,16 @@ export const AddPotModal: React.FC<AddPotModalProps> = ({
           </div>
 
           <div className="p-4 pt-2 border-top border-secondary border-opacity-10">
+            {error && (
+              <div className="small mb-2" role="alert" style={{ color: '#F87171' }}>{error}</div>
+            )}
             <button 
               type="submit" 
               className="btn w-100 py-2.5 fw-semibold text-white border-0 rounded-3 shadow-sm"
+              disabled={guardando}
               style={{ backgroundColor: '#10B981', fontSize: '13px', cursor: 'pointer' }}
             >
-              Guardar Maceta
+              {guardando ? 'Guardando…' : 'Guardar Maceta'}
             </button>
           </div>
         </form>

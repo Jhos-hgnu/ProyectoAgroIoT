@@ -30,6 +30,11 @@ function extremosTemperatura(mediciones: Mediciones | null): { minimo: number | 
   };
 }
 
+/** 'maceta-02' → '02'; si el id no termina en número, se usa tal cual. */
+export function numeroDeMaceta(dispositivoId: string): string {
+  return /(\d+)$/.exec(dispositivoId)?.[1] ?? dispositivoId;
+}
+
 export function adaptarMaceta(
   dispositivo: Dispositivo,
   riegos: Riego[],
@@ -55,12 +60,12 @@ export function adaptarMaceta(
   ));
 
   return {
-    id: '01',
-    number: '01',
+    id: dispositivo.id,
+    number: numeroDeMaceta(dispositivo.id),
     name: dispositivo.nombre,
-    crop: null,
-    zone: dispositivo.ubicacion,
-    sector: null,
+    crop: dispositivo.cultivo,
+    zone: dispositivo.zona ?? dispositivo.ubicacion,
+    sector: dispositivo.sector,
     battery: null,
     soilMoisture: valorSensor(dispositivo, 'HUMEDAD_SUELO'),
     vwcRange: `Riego bajo ${dispositivo.umbralRiego}%`,

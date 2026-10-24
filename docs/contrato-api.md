@@ -185,6 +185,8 @@ Base: `http://localhost:8080/api` en local y `https://<servicio>.onrender.com/ap
 | --- | --- | --- | --- | --- |
 | 1 | `GET /salud` | Todos | Comprobar que la API, la BD y Firebase responden | 200 |
 | 1 | `POST /lecturas` | ESP32 (`X-Api-Key`) | Enviar mediciones; la respuesta trae el comando de riego si hay uno | 201 |
+| 6 | `GET /dispositivos` | Frontend | Lista de macetas registradas (mismo formato que `GET /dispositivos/{id}`) | 200 |
+| 6 | `POST /dispositivos` | Frontend | Registrar una maceta: `{ cultivo, zona?, sector?, tieneBomba? }`. La API asigna `id` (`maceta-NN`) y `nombre` | 201 |
 | 2 | `GET /dispositivos/{id}` | Frontend | Configuración y sensores detectados con su estado | 200 |
 | 2 | `GET /dispositivos/{id}/mediciones` | Frontend | Series para las gráficas, sin agrupar o por hora | 200 |
 | 3 | `POST /dispositivos/{id}/riegos` | Frontend | Botón "Regar ahora" | 202 |

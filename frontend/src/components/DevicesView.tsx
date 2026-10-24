@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import type { PotData } from '../data/potsData';
+import type { DispositivoCrear } from '../types/contrato';
 import type { Dispositivo, DispositivoPatch } from '../types/contrato';
 import { Proximamente } from './Proximamente';
 import { estadoFirebase, type UseSalud } from '../hooks/useSalud';
 
 interface DevicesViewProps {
   potsList: PotData[];
-  onAddPot: (newPot: PotData) => void;
+  onAddPot: (datos: DispositivoCrear) => Promise<void>;
   selectedPotId: string;
   onSelectPot: (potId: string) => void;
-  /** Datos reales de maceta-01. */
+  /** Datos reales de la maceta seleccionada. */
   live?: {
     dispositivo: Dispositivo | null;
     guardandoConfig: boolean;
@@ -35,7 +36,7 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot, live, salud 
   const [pumpCalibValue, setPumpCalibValue] = useState('11.3');
 
   const selectedPot = potsList.find((p) => p.id === selectedPotId) || potsList[0];
-  const dispositivoLive = live && selectedPot?.id === '01' ? live.dispositivo : null;
+  const dispositivoLive = live && selectedPot && live.dispositivo?.id === selectedPot.id ? live.dispositivo : null;
   const [duracionEditada, setDuracionEditada] = useState('');
 
   // Al cambiar de maceta se cierra la edición para no guardar valores de otra.
@@ -305,7 +306,7 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot, live, salud 
                   {filteredPots.map((pot) => {
                     const isSelected = pot.id === selectedPotId;
                     const isOnline = esEnLinea(pot);
-                    const esLive = live !== undefined && pot.id === '01';
+                    const esLive = pot.online !== undefined;
 
                     return (
                       <tr
@@ -317,7 +318,7 @@ export function DevicesView({ potsList, selectedPotId, onSelectPot, live, salud 
                         <td className="bg-transparent border-0 py-3">
                           <div className="fw-bold text-white" style={{ fontSize: '14px' }}>{pot.name}</div>
                           <div className="small text-secondary" style={{ fontSize: '12px' }}>
-                            ID: {esLive ? live.dispositivo?.id ?? 'maceta-01' : `#ESP32-M${pot.number}`} — {pot.zone || (esLive ? 'Sin ubicación' : 'ZONA A')}
+                            ID: {esLive ? pot.id : `#ESP32-M${pot.number}`} — {pot.zone || (esLive ? 'Sin ubicación' : 'ZONA A')}
                           </div>
                         </td>
                         <td className="bg-transparent border-0 py-3">

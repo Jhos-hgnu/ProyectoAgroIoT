@@ -26,14 +26,16 @@ interface AlertItem {
 
 interface AlertsViewProps {
   potsList: PotData[];
-  /** Datos reales de maceta-01; sin ellos se usan solo las alertas calculadas de las macetas ficticias. */
+  /** Datos reales de la maceta seleccionada; las demás macetas usan alertas calculadas con sus últimas lecturas. */
   live?: {
+    potId: string;
+    nombre: string;
     alertas: Alerta[];
     tieneBomba: boolean;
     resolverAlerta: (alertaId: number) => Promise<void>;
     regar: () => Promise<void>;
   };
-  /** Notificaciones del navegador para alertas nuevas de maceta-01. */
+  /** Notificaciones del navegador para alertas nuevas de la maceta seleccionada. */
   notificacionesWeb?: UseNotificacionesWeb;
 }
 
@@ -65,13 +67,13 @@ function haceCuanto(fechaIso: string): string {
   return fechaGuatemala.format(fecha);
 }
 
-function adaptarAlerta(alerta: Alerta, potName: string, tieneBomba: boolean): AlertItem {
+function adaptarAlerta(alerta: Alerta, potId: string, potName: string, tieneBomba: boolean): AlertItem {
   const sensor = alerta.tipoSensor ? SENSORES[alerta.tipoSensor] : undefined;
   const esSuelo = alerta.tipoSensor === "HUMEDAD_SUELO";
   return {
     id: `api-${alerta.id}`,
     apiId: alerta.id,
-    potId: "01",
+    potId,
     potName,
     type: esSuelo ? "deficit" : alerta.tipoSensor ? "temp" : "info",
     title: alerta.mensaje,
@@ -97,9 +99,9 @@ export function AlertsView({ potsList, live, notificacionesWeb }: AlertsViewProp
   const [resolvedAlertIds, setResolvedAlertIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const potName01 = potsList.find((p) => p.id === "01")?.name ?? "Maceta 01";
+
   const historicalAlerts: AlertItem[] = live
-    ? live.alertas.map((alerta) => adaptarAlerta(alerta, potName01, live.tieneBomba))
+    ? live.alertas.map((alerta) => adaptarAlerta(alerta, live.potId, live.nombre, live.tieneBomba))
     : [];
   const [filter, setFilter] = useState<"all" | "active" | "resolved">("active");
   const [soilThreshold, setSoilThreshold] = useState<number>(45);
@@ -108,8 +110,8 @@ export function AlertsView({ potsList, live, notificacionesWeb }: AlertsViewProp
   const [webNotif, setWebNotif] = useState<boolean>(true);
 
   const currentAlerts = potsList.flatMap((pot): AlertItem[] => {
-    // maceta-01 usa las alertas reales de la API.
-    if (pot.isLoading || (live && pot.id === "01")) return [];
+    // La maceta seleccionada usa las alertas reales de la API.
+    if (pot.isLoading || (live && pot.id === live.potId)) return [];
 
     const alertsForPot: AlertItem[] = [];
     if (pot.soilMoisture !== null && pot.soilMoisture < soilThreshold) {

@@ -121,6 +121,9 @@ export interface Dispositivo {
   id: string
   nombre: string
   ubicacion: string | null
+  cultivo: string | null
+  zona: string | null
+  sector: string | null
   tieneBomba: boolean
   riegoAutomatico: boolean
   /** Hay bomba y el sensor de suelo está ACTIVO. */
@@ -132,6 +135,15 @@ export interface Dispositivo {
   conectado: boolean
   /** Solo los sensores que han enviado datos alguna vez. */
   sensores: SensorDetectado[]
+}
+
+/** POST /dispositivos: el id y el nombre los genera la API. */
+export interface DispositivoCrear {
+  cultivo: string
+  zona?: string
+  sector?: string
+  /** Por defecto true. */
+  tieneBomba?: boolean
 }
 
 /** Solo los campos a cambiar. */
