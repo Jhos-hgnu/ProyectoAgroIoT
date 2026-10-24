@@ -31,6 +31,9 @@ CREATE TABLE dispositivo (
     id                  VARCHAR(40)  PRIMARY KEY,  -- 'maceta-01'
     nombre              VARCHAR(80)  NOT NULL,
     ubicacion           VARCHAR(120),
+    cultivo             VARCHAR(80),               -- 'Lechuga Hidropónica'
+    zona                VARCHAR(40),               -- 'ZONA A'
+    sector              VARCHAR(40),               -- 'SECTOR #1'
     tiene_bomba         BOOLEAN      NOT NULL DEFAULT FALSE,
     riego_automatico    BOOLEAN      NOT NULL DEFAULT TRUE,
     umbral_riego        NUMERIC(5,2) NOT NULL DEFAULT 35

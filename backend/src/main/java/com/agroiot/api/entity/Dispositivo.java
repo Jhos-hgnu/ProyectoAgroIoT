@@ -24,6 +24,15 @@ public class Dispositivo {
 	@Column(length = 120)
 	private String ubicacion;
 
+	@Column(length = 80)
+	private String cultivo;
+
+	@Column(length = 40)
+	private String zona;
+
+	@Column(length = 40)
+	private String sector;
+
 	@Column(name = "tiene_bomba", nullable = false)
 	private boolean tieneBomba;
 
@@ -45,6 +54,11 @@ public class Dispositivo {
 	@Column(name = "creado_en", nullable = false)
 	private Instant creadoEn;
 
+	public Dispositivo(String id, String nombre) {
+		this.id = id;
+		this.nombre = nombre;
+	}
+
 	protected Dispositivo() {
 	}
 
@@ -60,6 +74,12 @@ public class Dispositivo {
 	public void setNombre(String nombre) { this.nombre = nombre; }
 	public String getUbicacion() { return ubicacion; }
 	public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+	public String getCultivo() { return cultivo; }
+	public void setCultivo(String cultivo) { this.cultivo = cultivo; }
+	public String getZona() { return zona; }
+	public void setZona(String zona) { this.zona = zona; }
+	public String getSector() { return sector; }
+	public void setSector(String sector) { this.sector = sector; }
 	public boolean isTieneBomba() { return tieneBomba; }
 	public void setTieneBomba(boolean tieneBomba) { this.tieneBomba = tieneBomba; }
 	public boolean isRiegoAutomatico() { return riegoAutomatico; }

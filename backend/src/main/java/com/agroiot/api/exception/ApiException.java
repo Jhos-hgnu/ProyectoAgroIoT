@@ -22,6 +22,11 @@ public class ApiException extends RuntimeException {
 		return new ApiException(HttpStatus.NOT_FOUND, "DISPOSITIVO_NO_ENCONTRADO", "No existe el dispositivo " + id);
 	}
 
+	public static ApiException dispositivoDuplicado(String id) {
+		return new ApiException(HttpStatus.CONFLICT, "DISPOSITIVO_DUPLICADO",
+				"Ya existe el dispositivo " + id + "; vuelve a intentarlo");
+	}
+
 	public static ApiException comandoNoEncontrado(Long id) {
 		return new ApiException(HttpStatus.NOT_FOUND, "COMANDO_NO_ENCONTRADO", "No existe el comando " + id);
 	}
