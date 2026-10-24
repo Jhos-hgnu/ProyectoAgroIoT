@@ -7,6 +7,17 @@ interface LiveHeaderData {
   actualizadoEn: Date | null;
   tieneBomba: boolean;
   duracionRiegoSeg: number | null;
+  dispositivo?: { ultimaConexion: string | null } | null;
+}
+
+/** "Última lectura hace 3 min" a partir de ultimaConexion (la hora de la última lectura del ESP32). */
+function textoUltimaLectura(ultimaConexion: string | null | undefined, ahora: number | null): string {
+  if (!ultimaConexion) return 'Sin lecturas todavía';
+  const minutos = Math.max(0, Math.floor(((ahora ?? Date.now()) - new Date(ultimaConexion).getTime()) / 60_000));
+  if (minutos < 1) return 'Última lectura: ahora';
+  if (minutos < 60) return `Última lectura hace ${minutos} min`;
+  if (minutos < 24 * 60) return `Última lectura hace ${Math.floor(minutos / 60)} h`;
+  return `Última lectura hace ${Math.floor(minutos / (24 * 60))} d`;
 }
 
 interface HeaderOverviewProps {
@@ -14,9 +25,14 @@ interface HeaderOverviewProps {
   isIrrigating: boolean;
   onIrrigate: () => void;
   live?: LiveHeaderData;
+  /** Genera y descarga el reporte de IA (solo maceta-01). */
+  onExport?: () => void;
+  isExporting?: boolean;
+  /** Abre la configuración de riego (solo maceta-01). */
+  onConfigure?: () => void;
 }
 
-export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigating, onIrrigate, live }) => {
+export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigating, onIrrigate, live, onExport, isExporting = false, onConfigure }) => {
   const [ahora, setAhora] = useState<number | null>(null);
   const isLive = live !== undefined;
 
@@ -34,7 +50,8 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
     ? !live.tieneBomba
       ? 'Sin bomba'
       : isIrrigating
-        ? 'Regando…'
+        // Desconectada, el riego queda en cola hasta que la maceta lo recoja.
+        ? live.conectado ? 'Regando…' : 'En cola…'
         : `Regar ahora (${live.duracionRiegoSeg ?? '—'} s)`
     : isIrrigating ? 'Regando...' : 'Dosis Manual 100ml';
   const connectionColor = live?.conectado ? '#10B981' : '#F87171';
@@ -78,7 +95,10 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
             className="badge rounded-pill fw-semibold border border-success border-opacity-25 ms-1" 
             style={{ fontSize: '11px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10B981', padding: '6px 12px' }}
           >
-            {pot.zone ?? (live ? <Proximamente /> : '—')} • {pot.sector ?? (live ? <Proximamente /> : '—')}
+            {live
+              // La API solo guarda la ubicación de la maceta (dispositivo.ubicacion); no tiene sector.
+              ? pot.sector ? `${pot.zone ?? 'Sin ubicación'} • ${pot.sector}` : pot.zone ?? 'Sin ubicación'
+              : <>{pot.zone ?? '—'} • {pot.sector ?? '—'}</>}
           </span>
         </div>
       </div>
@@ -97,7 +117,7 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
               <>
                 {live.conectado ? 'Conectado' : 'Desconectado'}
                 <span className="ms-1 text-secondary">•</span>
-                <Proximamente />
+                <span style={{ color: '#94A3B8', fontSize: '12px' }}>{textoUltimaLectura(live.dispositivo?.ultimaConexion, ahora)}</span>
               </>
             ) : pot.battery ?? <Proximamente />}
           </span>
@@ -135,28 +155,35 @@ export const HeaderOverview: React.FC<HeaderOverviewProps> = ({ pot, isIrrigatin
           <button 
             type="button"
             className="btn btn-sm fw-medium d-flex align-items-center gap-2 border border-secondary border-opacity-25 px-3.5 py-2.5 rounded-3 text-white shadow-sm"
-            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: live ? 'not-allowed' : 'pointer', opacity: live ? 0.7 : 1 }}
-            disabled={live !== undefined}
+            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: live && !onConfigure ? 'not-allowed' : 'pointer', opacity: live && !onConfigure ? 0.7 : 1 }}
+            onClick={onConfigure}
+            disabled={live !== undefined && !onConfigure}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2">
               <circle cx="12" cy="12" r="10"/>
               <polyline points="12 6 12 12 16 14"/>
             </svg>
-            <span>{live ? 'Próximamente' : 'Configurar Horario'}</span>
+            <span>{live ? 'Configurar Riego' : 'Configurar Horario'}</span>
           </button>
 
           <button 
             type="button"
             className="btn btn-sm fw-medium d-flex align-items-center gap-2 border border-secondary border-opacity-25 px-3.5 py-2.5 rounded-3 text-white shadow-sm"
-            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: live ? 'not-allowed' : 'pointer', opacity: live ? 0.7 : 1 }}
-            disabled={live !== undefined}
+            style={{ backgroundColor: '#1E293B', fontSize: '13px', cursor: isExporting ? 'wait' : 'pointer', opacity: isExporting ? 0.7 : 1 }}
+            onClick={onExport}
+            disabled={isExporting}
+            aria-busy={isExporting}
           >
+            {isExporting ? (
+              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" style={{ width: '14px', height: '14px' }}></span>
+            ) : (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="7 10 12 15 17 10"/>
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
-            <span>{live ? 'Próximamente' : 'Exportar CSV'}</span>
+            )}
+            <span>{live ? (isExporting ? 'Generando reporte…' : 'Exportar Reporte IA') : 'Exportar CSV'}</span>
           </button>
         </div>
       </div>

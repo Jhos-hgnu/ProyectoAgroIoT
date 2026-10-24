@@ -3,6 +3,9 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { AddPotModal } from './Overview/AddPotModal';
 import type { PotData } from '../data/potsData';
+import type { UserProfile } from './SettingsView';
+import type { Notificacion } from './NotificationsDropdown';
+import type { UseSalud } from '../hooks/useSalud';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,6 +16,10 @@ interface LayoutProps {
   onSelectPot: (id: string) => void;
   potsList: PotData[];
   onAddPot: (pot: PotData) => void;
+  profile: UserProfile;
+  notificaciones?: Notificacion[];
+  esp32Conectado?: boolean | null;
+  salud?: UseSalud;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -23,21 +30,30 @@ export const Layout: React.FC<LayoutProps> = ({
   selectedPotId,
   onSelectPot,
   potsList,
-  onAddPot
+  onAddPot,
+  profile,
+  notificaciones,
+  esp32Conectado,
+  salud
 }) => {
   const [isAddPotModalOpen, setIsAddPotModalOpen] = useState(false);
 
   return (
-    <div className="d-flex min-vh-100 w-100 text-white" style={{ backgroundColor: '#0F172A' }}>
-      <Sidebar onLogout={onLogout} activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="d-flex flex-column min-w-0" style={{ flex: 1, backgroundColor: '#0F172A', width: '100%' }}>
+    <div className="d-flex vh-100 w-100 overflow-hidden" style={{ backgroundColor: 'var(--bg-app)', color: 'var(--text-primary)', transition: 'background-color 0.3s ease' }}>
+      <Sidebar onLogout={onLogout} activeTab={activeTab} setActiveTab={setActiveTab} profile={profile} esp32Conectado={esp32Conectado} salud={salud} />
+      <div className="d-flex flex-column min-w-0" style={{ flex: 1, minHeight: 0, backgroundColor: 'var(--bg-app)', width: '100%', transition: 'background-color 0.3s ease' }}>
         <Topbar 
           selectedPotId={selectedPotId}
           onSelectPot={onSelectPot}
           potsList={potsList}
           onOpenAddPotModal={() => setIsAddPotModalOpen(true)}
+          onNavigate={(vista) => setActiveTab(vista)} // Pasa la redirección de notificaciones
+          notificacionesLive={notificaciones}
         />
-        <main className="p-4 overflow-auto" style={{ flex: 1 }}>
+        <main
+          className={`p-4 ${activeTab === 'devices' ? 'devices-main' : 'overflow-auto'}`}
+          style={{ flex: 1, minHeight: 0 }}
+        >
           {children}
         </main>
       </div>
